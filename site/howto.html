@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f9ff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1a2b">
+  <title>How to use zWorkTracker</title>
+  <meta name="description" content="How to use zWorkTracker: set it up, run timers, correct time, bill with rounding and summaries, analyse your hours and keep your data.">
+  <link rel="canonical" href="https://z.rustcircle.com/howto.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="zWorkTracker">
+  <meta property="og:title" content="How to use zWorkTracker">
+  <meta property="og:description" content="How to use zWorkTracker: set it up, run timers, correct time, bill with rounding and summaries, analyse your hours and keep your data.">
+  <meta property="og:url" content="https://z.rustcircle.com/howto.html">
+  <meta property="og:image" content="https://z.rustcircle.com/assets/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The zWorkTracker Timeline tab with a running timer and a day of tracked work.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/icon-64.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="liquid.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <canvas class="liquid" aria-hidden="true"></canvas>
+  <header class="topbar">
+    <div class="wrap topbar-in">
+      <a class="brand" href="./"><img src="assets/logo.svg" width="28" height="28" alt=""><span>zWorkTracker</span></a>
+      <nav aria-label="Main"><a class="nav-section" href="./">Home</a><a href="howto.html" aria-current="page">How to use</a><a href="https://github.com/rustcircle/z-work-tracker">GitHub</a></nav>
+    </div>
+  </header>
+
+    <main id="main" class="wrap doc">
+    <header class="doc-head">
+      <h1>How to use zWorkTracker</h1>
+      <p class="lead">From your first timer to a billing summary, task by task. For every detail, see the <a href="https://github.com/rustcircle/z-work-tracker/blob/main/README.md#user-guide">full user guide in the README on GitHub</a>.</p>
+    </header>
+
+    <nav class="card toc" id="contents" aria-labelledby="toc-title">
+      <h2 id="toc-title" class="toc-title">Contents</h2>
+      <div class="toc-grid">
+        <div>
+          <a class="toc-group" href="#get-started">Get started</a>
+          <ul><li><a href="#install">Install</a></li><li><a href="#setup">First-run setup</a></li><li><a href="#first-task">Create a project and a task</a></li><li><a href="#first-timer">Start the timer</a></li></ul>
+        </div>
+        <div>
+          <a class="toc-group" href="#daily">Daily use</a>
+          <ul><li><a href="#timer">Start, pause, resume, stop</a></li><li><a href="#tray">The tray</a></li><li><a href="#time-away">Time away</a></li><li><a href="#timeline">The timeline</a></li><li><a href="#corrections">Corrections and hand-entered time</a></li><li><a href="#subtasks">Subtasks</a></li><li><a href="#tags">Tags and templates</a></li></ul>
+        </div>
+        <div>
+          <a class="toc-group" href="#billing">Billing</a>
+          <ul><li><a href="#prices">Prices and currency</a></li><li><a href="#fixed-fees">Fixed fees and budgets</a></li><li><a href="#rounding">Increments and rounding</a></li><li><a href="#billable-pauses">Billable pauses</a></li><li><a href="#summaries">Billing summaries</a></li><li><a href="#pdf">Timesheet PDF</a></li><li><a href="#exports">Excel and CSV</a></li></ul>
+        </div>
+        <div>
+          <a class="toc-group" href="#analysis">Analysis</a>
+          <ul><li><a href="#periods">Periods and comparison</a></li><li><a href="#metrics">Metrics</a></li><li><a href="#share-of-time">Share of time</a></li><li><a href="#zones">Time zones and Show both</a></li><li><a href="#shifts">Work shifts</a></li></ul>
+        </div>
+        <div>
+          <a class="toc-group" href="#data">Your data</a>
+          <ul><li><a href="#backups">Backups</a></li><li><a href="#sync">Folder sync</a></li><li><a href="#hide-earnings">Hide earnings</a></li><li><a href="#themes">Themes</a></li></ul>
+        </div>
+      </div>
+    </nav>
+
+    <section id="get-started" class="doc-section" aria-labelledby="get-started-title">
+      <h2 id="get-started-title" class="label">Get started</h2>
+
+      <h3 id="install">Install</h3>
+      <p>Install zWorkTracker from its <a href="https://apps.microsoft.com/detail/9P9RM9G0QBRC">Microsoft Store page</a>. It needs the Microsoft Edge WebView2 Runtime: Windows 11 includes it, and some Windows 10 PCs may need to install it.</p>
+      <p class="callout">Before you install, read the <a href="./#notices">notices</a>. In short: uninstalling removes the app's local data unless you have connected a OneDrive or Google Drive folder, and the app is built for one device at a time.</p>
+
+      <h3 id="setup">First-run setup</h3>
+      <p>The first launch opens a short setup. It walks through:</p>
+      <ol class="steps">
+        <li>The theme, with a live preview.</li>
+        <li>Your time zone and your client's.</li>
+        <li>Time rules. The default bills in 15-minute steps, rounded up.</li>
+        <li>A first project.</li>
+        <li>Work shifts, starting from presets.</li>
+        <li>A sync folder. Detected OneDrive and Google Drive folders are listed, and nothing is turned on unless you tick it.</li>
+      </ol>
+      <p>Each step has Back and Skip, and <b>Finish with defaults</b> ends setup in one click. Setup logs no time. To go through it again later, use <b>Run setup again</b> in Settings: it changes settings only after you confirm and never touches your data.</p>
+
+      <h3 id="first-task">Create a project and a task</h3>
+      <ol class="steps">
+        <li>Open <b>Projects</b> and create a project with a unique name and a colour. A free colour is suggested. Add a price per hour now or later.</li>
+        <li>Press <b>New task</b>. Give it a name, choose the project, and write a description. If you have tags, add at least one.</li>
+      </ol>
+      <p>The first task after each launch starts from an empty form, and the description is required. Once you have worked in this launch, <b>New task</b> starts from a copy of your most recent task, and only the name and project are required. A copy is a separate task, so editing it never changes the original.</p>
+
+      <h3 id="first-timer">Start the timer</h3>
+      <p>Press <b>Start</b> on the task. The timer runs on the task's card, and the time is recorded with exact start and end times. Only one task runs at a time: starting another pauses the one that was running, and the app tells you.</p>
+      <p class="back"><a href="#contents">Back to contents</a></p>
+    </section>
+
+    <section id="daily" class="doc-section" aria-labelledby="daily-title">
+      <h2 id="daily-title" class="label">Daily use</h2>
+
+      <h3 id="timer">Start, pause, resume, stop</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Task state</th><th scope="col">Buttons you can use</th></tr></thead>
+          <tbody>
+            <tr><td>Draft</td><td>Start</td></tr>
+            <tr><td>Running</td><td>Pause, Stop</td></tr>
+            <tr><td>Paused</td><td>Resume, Stop</td></tr>
+            <tr><td>Stopped</td><td>None. Stopped is final.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Paused time is left out of the total. After you quit and reopen the app, Resume on a paused task opens the new-task form instead. Submitting it creates a new task linked to the paused one, and the paused one stays as it was.</p>
+      <p>Use the mouse for these buttons. The Space bar never starts, pauses, resumes or stops a timer, so a stray key press can't change one. Enter on a focused button still works.</p>
+
+      <h3 id="tray">The tray</h3>
+      <ul class="plain">
+        <li>Closing the window with X hides it to the tray. The app keeps running, and a running task keeps timing.</li>
+        <li>Left-click the tray icon to show the window. Its menu has Show, the current task with its elapsed time, Pause or Resume, and Quit.</li>
+        <li>Only <b>Quit</b> really exits. A running task is paused at that moment.</li>
+      </ul>
+
+      <h3 id="time-away">Time away</h3>
+      <p>While a task runs, the app notices when the PC sleeps, the session is locked, or nobody touches the keyboard or mouse for the idle limit (10 minutes by default). When you come back, it asks what to do with that time:</p>
+      <ul class="plain">
+        <li><b>Keep</b> counts it as work.</li>
+        <li><b>Drop</b> leaves it out.</li>
+        <li><b>Thinking</b> counts it, and reports it separately.</li>
+      </ul>
+      <p>Until you answer, the time doesn't count. The recorded times stay as they were, whatever you choose.</p>
+
+      <h3 id="timeline">The timeline</h3>
+      <p>The main screen shows the period total, then each day with the newest first. Every day has an axis with blocks in project colours, and its entries are grouped into Night, Morning, Afternoon and Evening. Day headers show Billable and Exact totals, and totals per project with earnings.</p>
+      <figure class="doc-figure">
+        <picture><source media="(max-width: 640px)" srcset="assets/timeline-phone.webp" width="394" height="690"><img src="assets/timeline.webp" width="1920" height="1080" loading="lazy" decoding="async" alt="The Timeline tab with a running task, the day's totals, a coloured axis of work and pauses, and a table of entries."></picture>
+        <figcaption>The Timeline tab, with sample data.</figcaption>
+      </figure>
+      <p>Click an entry to select it, Ctrl+click to add or remove one, and Shift+click to select a run. The selection bar shows the count and the billable total, and can export just those entries. The search box filters tasks by name and description, together with project and tags.</p>
+
+      <h3 id="corrections">Corrections and hand-entered time</h3>
+      <p>From a task's details you can add time the app didn't log, correct a segment's start and end, or void a segment and bring it back. Each asks for a reason where it helps, and warns about overlaps.</p>
+      <p>Nothing is overwritten: the recorded times stay, the correction sits beside them, and the history lists every change with when, what and why. You can't correct a running segment, or time that is on a billing summary until that summary is voided.</p>
+
+      <h3 id="subtasks">Subtasks</h3>
+      <p>Subtasks are the items of a task list in the task's description:</p>
+      <ol>
+        <li>Open the task for editing, click in <b>Description</b> and press the <b>Task list</b> button (☑≡) in the formatting bar.</li>
+        <li>Type one subtask per line, pressing Enter between them, and save the task.</li>
+        <li>On the task card, each subtask shows its own time. Press <b>Make active</b> on the one you are working on. The button works only for saved items.</li>
+      </ol>
+      <p>One subtask is active at a time, and new time goes to it. Switching while the task runs splits the time at that moment, so the task total stays the sum of its parts. Tick an item when it is done. Deleting the active item from the description clears the active subtask.</p>
+
+      <h3 id="tags">Tags and templates</h3>
+      <p>Tags have a name and a colour, and four starter tags come with the app. <b>New tag</b>, beside the tag picker, opens Settings at the form for a new tag, and <b>Back to task</b> returns you to the form with what you typed. Analysis breaks time down by tag.</p>
+      <p>A template keeps a task's name, description, project and tags. Creating a task from it gives you a fresh draft with its subtasks unticked.</p>
+      <p class="back"><a href="#contents">Back to contents</a></p>
+    </section>
+
+    <section id="billing" class="doc-section" aria-labelledby="billing-title">
+      <h2 id="billing-title" class="label">Billing</h2>
+
+      <h3 id="prices">Prices and currency</h3>
+      <p>Set a <b>price per hour</b> on a project, in EUR or USD. Leaving it blank means no rate, which differs from a rate of 0. A new price applies from now, so past earnings don't change; to backdate one, choose a date and confirm. Turn off <b>billable</b> for a project that earns nothing. EUR and USD totals are shown side by side, never added together.</p>
+
+      <h3 id="fixed-fees">Fixed fees and budgets</h3>
+      <p>A project can bill a <b>fixed fee</b> instead of hourly. It earns the fee, and Analysis shows its effective hourly rate: the fee divided by billable hours. A budget, in hours or as the fee, warns you at 80% and at 100%.</p>
+
+      <h3 id="rounding">Increments and rounding</h3>
+      <p>Billable time is rounded per task per day. The default is 15 minutes, rounded Up. You can choose Off, 1, 5, 6, 10, 15, 30 or 60 minutes, or your own number, rounded Up, Nearest or Down, and a project can have its own setting.</p>
+      <ul class="plain">
+        <li>With 15 minutes Up, 1 minute bills 15, exactly 15:00 stays 15:00, and 15:01 bills 30:00.</li>
+        <li>The recorded times are never rounded. <b>Exact</b> is what happened and <b>Billable</b> is what you can bill, and both are always shown.</li>
+      </ul>
+
+      <h3 id="billable-pauses">Billable pauses</h3>
+      <p>Mark a pause as <b>billable</b> when you were still working, for example on a call. It counts in Billable and earnings, but never in Exact, and it is reported on its own.</p>
+
+      <h3 id="summaries">Billing summaries</h3>
+      <ol class="steps">
+        <li>In <b>Billing</b>, pick a project and a period to see the unbilled time per task and day.</li>
+        <li>Answer any time away first: unanswered time is left out of the summary.</li>
+        <li>Press <b>Create summary</b>. It is frozen with a reference such as A-001, and that time is marked billed.</li>
+        <li>Copy it, or export it as CSV. Voiding a summary puts its time back to unbilled.</li>
+      </ol>
+      <figure class="doc-figure doc-figure-sm">
+        <picture><source media="(max-width: 640px)" srcset="assets/billing-phone.webp" width="432" height="358"><img src="assets/billing.webp" width="737" height="358" loading="lazy" decoding="async" alt="A billing table listing tasks with exact time, billable time and amount for each day, and a total row."></picture>
+        <figcaption>A week's unbilled time in Billing, with sample data.</figcaption>
+      </figure>
+      <p class="callout">Billing summaries are for your own guidance. They are not invoices, accounting or tax advice, so check them before you bill a client.</p>
+
+      <h3 id="pdf">Timesheet PDF</h3>
+      <p>Create a PDF timesheet for a period, with or without prices, in your client's zone, and with your logo (PNG) if you add one. It is made on your PC. Japanese, Chinese, Korean, Hebrew, Arabic and emoji print as empty boxes in the PDF, and the export tells you when that happens; Excel and CSV show them normally.</p>
+
+      <h3 id="exports">Excel and CSV</h3>
+      <p><b>Export</b> asks for the format, the zones and whether to include earnings. Turn earnings off for a file a client will see, and no price data appears anywhere in it. The Excel workbook has sheets for labor by project, segment details, earnings when included, and analytics. With entries selected on the timeline, you can export just the selection.</p>
+      <p class="back"><a href="#contents">Back to contents</a></p>
+    </section>
+
+    <section id="analysis" class="doc-section" aria-labelledby="analysis-title">
+      <h2 id="analysis-title" class="label">Analysis</h2>
+
+      <h3 id="periods">Periods and comparison</h3>
+      <p>Choose a day, week, month, quarter, year or a custom range, and filter by project, task, tag, band, shift or text. <b>Compare with the previous period</b> sets each figure beside the same length of time before it.</p>
+
+      <h3 id="metrics">Metrics</h3>
+      <p>Sections cover volume, time of day, projects, tasks, focus and sessions, consistency, goals and money, shifts and zones. Every metric has an info button and an entry in the searchable <b>Metrics glossary</b>. Every chart has a <b>View data</b> table, and clicking a chart shows the tasks behind it. Insights are written from your numbers, with no AI, and there is no productivity score. Analysis updates itself at least every 30 seconds while the window is visible, whether or not a task is running, and keeps your range, filters, chart level and open <b>View data</b> tables as they are.</p>
+
+      <h3 id="share-of-time">Share of time</h3>
+      <p>The share-of-time chart shows where the period's hours went. Each row of its legend gives the hours and the share, for example <b>Client website 16h 50m (47%)</b>. The hours follow the Billable/Exact switch and your filters and add up to the total in the middle, and the shares add up to 100%.</p>
+      <ul class="plain">
+        <li><b>Projects</b>, <b>Tasks</b>, <b>Subtasks</b> or <b>Tags</b> chooses what each slice is. The chart starts at the level your filter leaves open: projects with no project filter, tasks for one project, subtasks for one task. Once you pick a level yourself, it stays until you switch it.</li>
+        <li>Rows name only what the filter leaves open, such as <b>Task · Project</b> across projects or just the task within one. Subtask time with no subtask shows as <b>(no subtask)</b>.</li>
+        <li>With <b>Tags</b>, each slice is a tag combination, such as <b>Design + Client</b>, and time without tags is <b>No tag</b>. A task with several tags is counted once, under its combination.</li>
+        <li>With many tasks, subtasks or combinations, the smallest are grouped as <b>Other</b>. View data lists every one.</li>
+      </ul>
+      <p>To filter by tag, tick the tags you want: with none ticked, every task counts, and with some ticked, tasks with any of them count. <b>No tag</b> selects untagged tasks.</p>
+      <figure class="doc-figure doc-figure-sm">
+        <picture><source media="(max-width: 640px)" srcset="assets/analysis-phone.webp" width="244" height="298"><img src="assets/analysis.webp" width="757" height="298" loading="lazy" decoding="async" alt="Analysis cards for total time, active days, average per active day, earnings, fixed fee and weekly target, with changes compared with the previous period."></picture>
+        <figcaption>Metric cards in Analysis, with sample data.</figcaption>
+      </figure>
+
+      <h3 id="zones">Time zones and Show both</h3>
+      <p>Times are stored in UTC and shown in whichever zone you pick in the header: <b>My time</b>, <b>Client time</b>, <b>UTC</b> or <b>Other</b>. Set your zone and your client's in Settings, from a searchable list or a world map. A project can have its own client zone.</p>
+      <p>Turn on <b>Show both</b> to add a second axis in the client's zone, so an entry reads, for example, 14:00-16:30 Lisbon / 09:00-11:30 New York. The client's working hours are shaded. Daylight saving changes are handled for each moment, and the app marks them on the timeline.</p>
+
+      <h3 id="shifts">Work shifts</h3>
+      <p>In Settings, define shifts with a name, colour, times, weekdays and zone, starting from the Morning, Afternoon and Night presets. Shifts appear as bands on the timeline and have their own charts, such as scheduled versus worked time.</p>
+      <p class="back"><a href="#contents">Back to contents</a></p>
+    </section>
+
+    <section id="data" class="doc-section" aria-labelledby="data-title">
+      <h2 id="data-title" class="label">Your data</h2>
+
+      <h3 id="backups">Backups</h3>
+      <p>Once a day the app writes a dated copy of its data on your PC, keeping the newest 30 (you can choose 1 to 365). <b>Restore</b> in Settings first saves your current data as a safety copy, then rolls back. With sync on, newer records in your sync folder merge back in at the next sync, so turn sync off first to go back for good.</p>
+
+      <h3 id="sync">Folder sync on OneDrive and Google Drive</h3>
+      <p>The app keeps everything on your PC and works offline. To keep a copy elsewhere, or to carry on from another PC, choose a folder of the OneDrive or Google Drive desktop app, in setup or in Settings. The provider's desktop app does the upload; zWorkTracker makes no network calls.</p>
+      <ul class="plain">
+        <li>Once it is on, sync runs by itself: at launch, shortly after each change, every 30 minutes, and when you quit.</li>
+        <li>Settings shows each folder's status, such as "Written to OneDrive folder, 2 min ago". The app can confirm the write, not the upload.</li>
+        <li>On a second PC, choose the same folder: the app shows what it holds and offers to connect and merge.</li>
+        <li>Let sync finish on one PC before you work on another. The app is built for one device at a time.</li>
+        <li>The files hold your full labor data, including prices, and the app doesn't encrypt them. Don't use a folder you share with other people.</li>
+      </ul>
+      <p class="callout">Uninstalling removes the app's local data. A connected folder keeps a permanent copy, and its files stay until you delete them.</p>
+
+      <h3 id="hide-earnings">Hide earnings</h3>
+      <p><b>Hide earnings</b> in the header masks amounts everywhere, including the tray, and is remembered. Use it when a client may see your screen.</p>
+
+      <h3 id="themes">Themes</h3>
+      <p>Choose Light, Solarized Light, Solarized Dark or Dark in Settings, on each PC. Project colours stay as you chose them in every theme.</p>
+      <p class="back"><a href="#contents">Back to contents</a></p>
+    </section>
+
+    <p class="doc-end">More detail on every topic is in the <a href="https://github.com/rustcircle/z-work-tracker/blob/main/README.md#user-guide">README on GitHub</a>. Questions: <a href="mailto:pmrj@rustcircle.com">pmrj@rustcircle.com</a>.</p>
+  </main>
+
+  <footer class="wrap footer">
+    <div class="footer-in">
+      <p>Copyright (c) 2026 Pedro Miguel Rodrigues Jorge. <a href="mailto:pmrj@rustcircle.com">pmrj@rustcircle.com</a></p>
+      <p class="trio" aria-hidden="true"><svg class="i" aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h12M6 21h12M8 3c0 5 8 6 8 9s-8 4-8 9M16 3c0 5-8 6-8 9s8 4 8 9"/></svg><svg class="i" aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6.5V12l3.5 2"/></svg><svg class="i" aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M10 3h4M12 3v3M12 9.5v4l2.5 1.5"/></svg></p>
+      <nav aria-label="Footer"><a href="./">Home</a><a href="privacy.html">Privacy</a><a href="https://github.com/rustcircle/z-work-tracker/blob/main/LICENSE">MIT License</a><a href="https://github.com/rustcircle/z-work-tracker">GitHub</a></nav>
+    </div>
+  </footer>
+</body>
+</html>

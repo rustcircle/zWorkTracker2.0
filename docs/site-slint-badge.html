@@ -1,0 +1,18 @@
+<!--
+  "Made with Slint" badge for the public download page (attribution required by the
+  Slint Royalty-free License 2.0). It is already in this repo's site/index.html footer,
+  always visible (the owner's choice: not gated on 2.0). Keep this file as the reference snippet.
+
+  Assets are Slint's official badges: https://github.com/slint-ui/slint/tree/master/logo
+  Better: copy the SVGs into site/assets/ and change the src to point there, so the page loads no third-party resources.
+  The dark-mode variant is picked by prefers-color-scheme.
+-->
+<a class="made-with-slint" href="https://slint.dev" target="_blank" rel="noopener"
+   title="zWorkTracker's interface is built with Slint">
+  <picture>
+    <source media="(prefers-color-scheme: dark)"
+            srcset="https://raw.githubusercontent.com/slint-ui/slint/master/logo/MadeWithSlint-logo-dark.svg">
+    <img src="https://raw.githubusercontent.com/slint-ui/slint/master/logo/MadeWithSlint-logo-light.svg"
+         alt="Made with Slint" height="48" loading="lazy">
+  </picture>
+</a>

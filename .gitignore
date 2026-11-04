@@ -1,0 +1,48 @@
+# Rust / Cargo build outputs
+/target/
+**/target/
+**/*.rs.bk
+*.pdb
+/dist/
+/out/
+*.exe
+*.msix
+*.msixbundle
+*.appx
+*.dmg
+
+# Local-only cargo override (points z-work-core at the sibling checkout)
+/.cargo/config.toml
+/.cargo/config
+
+# Agent stack and memory working files
+/.stack/
+/.neuralmemory/
+
+# Signing material and keys: never commit
+*.pfx
+*.cer
+*.p12
+*.key
+*.pem
+*.snk
+*.keystore
+
+# Local app data and sample stores
+/data/
+/sample-data/
+/.sample/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
