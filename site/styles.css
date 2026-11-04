@@ -82,6 +82,7 @@ section[id] { scroll-margin-top: 80px; }
 .topbar nav { display: flex; gap: 32px; font-size: .9375rem; font-weight: 600; }
 .topbar nav a { color: var(--ink-2); text-decoration: none; padding-block: 8px; }
 .topbar nav a:hover { color: var(--accent); }
+.nav-toggle { display: none; }
 
 /* ---------- Intro ---------- */
 .intro { padding-block: 40px 24px; animation: rise .7s cubic-bezier(.2, .8, .2, 1) both; }
@@ -273,6 +274,17 @@ body > main { flex: 1 0 auto; width: 100%; }
 }
 @media (max-width: 640px) {
   .wrap { padding-inline: 16px; }
+  /* Phone menu (nav.js). Only with JavaScript on; without it the nav stays a row of links. */
+  .js .nav-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-right: -10px; padding: 0; color: var(--ink); background: none; border: 0; border-radius: 10px; cursor: pointer; font: inherit; }
+  .js .nav-toggle:hover { color: var(--accent); }
+  .js .nav-toggle path { transition: transform .2s ease, opacity .2s ease; transform-origin: 12px 12px; }
+  .js .topbar.open .bars-top { transform: translateY(5px) rotate(45deg); }
+  .js .topbar.open .bars-mid { opacity: 0; }
+  .js .topbar.open .bars-bot { transform: translateY(-5px) rotate(-45deg); }
+  .js .topbar nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; gap: 0; padding: 8px 16px 12px; font-size: 1rem; background: var(--surface-solid); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
+  .js .topbar.open nav { display: flex; }
+  .js .topbar nav a, .js .topbar nav .nav-section { display: flex; align-items: center; min-height: 44px; padding: 8px 0; }
+  .js .topbar nav a + a { border-top: 1px solid var(--line); }
   .toc-grid { grid-template-columns: minmax(0, 1fr); }
   .doc-figure picture img[src$="timeline.webp"] { max-width: 400px; }
   .doc th, .doc td { padding: 8px 12px; }
