@@ -7,7 +7,8 @@ with no other context. Read it top to bottom before writing code, then start at 
 
 - **zWorkTracker** is a local-first time tracker for freelancers by Pedro Miguel Rodrigues Jorge (the owner).
 - **Current app (1.x):** `/Users/p/Z/ZCode/z-work-tracker`. Tauri 2 + React/TypeScript UI + Rust core, at 1.3.3,
-  MIT, remote https://github.com/rustcircle/z-work-tracker. It goes to the Microsoft Store as **1.4.0 on Tauri**.
+  MIT, remote https://github.com/rustcircle/z-work-tracker. It never goes to the Store: **the owner decided on 2026-11-04 that 2.0 (Slint) is the first
+  version on the Microsoft Store** (2.0.0.0, the first submission); Tauri 1.4.0 is not finished and is not released.
   The owner finds it heavy and sluggish (WebView2).
 - **This repo (2.0):** `/Users/p/Z/ZCode/zWorkTracker`. A native Rust desktop app with a **Slint** UI over the
   **same Rust core**, reading and writing the **same data** as the Tauri app.
@@ -32,14 +33,16 @@ with no other context. Read it top to bottom before writing code, then start at 
 ## 2. What the existing app is (read these first)
 
 **The newest 1.x code is in the worktree `z-work-tracker/.claude/worktrees/task-deletion-timeline-ad2298`
-(W)**: 1.3.3 plus what is landing in 1.4.0 (sticky Share of time level, live updates, subtask tags). Read W in
-preference to the main checkout until 1.4.0 is merged; after that read `main`. The full feature list with sources
+(W)**: 1.3.3 plus the unfinished 1.4.0 work (sticky Share of time level, live updates, subtask tags). Read W in
+preference to the main checkout. The 1.4.0 designs (live updates, subtask tags) are **2.0 features built
+natively here**, from the spec and plan below, not "followed" from a Tauri release. The full feature list with sources
 is **[docs/PARITY.md](docs/PARITY.md)** (402 lines).
 
 | Source | What for |
 |---|---|
-| W/`.stack/out/delegator/live-updates-spec.md` | 1.4.0 live-updates design (per-data subscriptions, 1 s clock, no polling, hidden-window catch-up, tray elapsed); 2.0's reactive model must match its final merged form |
-| W/`.stack/out/planner/20261104-0638-140-subtask-tags/plan.md` | 1.4.0 subtask tags incl. "Owner answers" |
+| [docs/from-1.4.0/README.md](docs/from-1.4.0/README.md) | Index of the 1.4.0 requirements carried into 2.0 (the owner: carry momentum and requirements from 1.4.0 to 2.0); `live-updates-tauri-plan.md` there is the stopped Tauri plan, reference only |
+| [docs/from-1.4.0/live-updates-spec.md](docs/from-1.4.0/live-updates-spec.md) | 1.4.0 live-updates design (per-data subscriptions, 1 s clock, no polling, hidden-window catch-up, tray elapsed); 2.0 builds this design natively ([§5](#5-reactive-architecture)): its Change 2/3 rules are requirements |
+| [docs/from-1.4.0/subtask-tags-plan.md](docs/from-1.4.0/subtask-tags-plan.md) | Subtask tags, a **2.0 feature** built natively (milestone 2) from this plan incl. "Owner answers": subset of the task's tags with Select all/Deselect all, empty = No tag, unknown-field catch-all, copies reset to Same as task |
 | W/`STORE_LISTING_NOTICE.md` | Store feature list, notices, privacy (no network calls, no telemetry) |
 | W/`src/lib/themes.ts`, `src/styles/base.css`, `src/features/**/*.css` | Theme tokens, fonts, spacing (visual parity, [§7.2](#72-visual-parity)) |
 | W/`assets/logo/`, `src-tauri/icons/` | Logo master, icon generator, tray icons |
@@ -78,7 +81,7 @@ zWorkTracker/
                           the 1 s clock, the background worker (sync, heartbeat). Unit-testable without Slint.
     zwt-ui-logic/         (if needed) ports of TS-only logic, tested against z-work-tracker/fixtures/*.json
   assets/                 the 1.x icon sources (logo.svg, build-icons.py, tray-*.svg), copied verbatim in M1
-  site/                   the public website (z.rustcircle.com), moved here from the 1.x repo (done, [§12](#11-website))
+  site/                   the public website (z.rustcircle.com), moved here from the 1.x repo (done, [§11](#11-website))
   .github/workflows/pages.yml   deploys site/ to GitHub Pages (done, copied verbatim from 1.x)
   docs/
     PARITY.md             the exhaustive feature checklist (done)
@@ -221,7 +224,10 @@ exists and is PE x86-64 (`file` says so); `MEASUREMENTS.md` has a table with num
 
 Projects (price per hour, currency, fixed fee, budget alerts, archive), tasks and subtasks (forms, drafts, cold
 resume = new linked task form, continued tasks, delete rules), tags and templates, colours, corrections and
-manual entries, billable pauses, subtask time. AC: each matches the README section of the same name;
+manual entries, billable pauses, subtask time, and **subtask tags** (a 2.0 feature built natively from the 1.4.0
+subtask-tags plan and its Owner answers: a subtask carries a subset of its task's tags, default "Same as task",
+popover with one Select all / Deselect all toggle, empty subset = "No tag", catch-all for unknown fields on Task
+and Segment, copies and templates reset to "Same as task"; docs/PARITY.md rows 70-80). AC: each matches the README section of the same name;
 `patch-task-parity.json` passes through the Rust path.
 
 ### Milestone 3: tray, lifecycle, time away
@@ -257,36 +263,68 @@ Take over, Pause it from here), first-run setup. AC: a store written by the Taur
 (sample data, both directions); sync between a Tauri device and a Slint device converges (core cloud round-trip
 scenario reproduced with two sample dirs).
 
-### Milestone 7: packaging and release
+### Milestone 7: packaging and Store release preparation
 
-Windows installer and MSIX that ships as an **update of the same Store app**: Identity Name
-`PedroMiguelRodriguesJorge.zWorkTracker`, Publisher `CN=1DEF8D7B-1D68-4604-8047-048DC92CF3A9`, display name
-"Pedro Miguel Rodrigues Jorge", family `PedroMiguelRodriguesJorge.zWorkTracker_54k2cbaqgvhqp`, Store ID
-`9P9RM9G0QBRC`, Application Id `zWorkTracker`, StartupTask `zWorkTrackerStartup`, `runFullTrust`, MinVersion
-10.0.19041.0 (all verified in docs/PARITY.md §Store identity, from W/scripts/msix-manifest.mjs), the same test
-identity, the 60 MSIX images incl. `_altform-unplated`/targetsize variants cut from the same `icon.png` by the
-same rules (port or call `package-msix.mjs`/`make-pri.mjs` logic; the UTM Windows VM flow `pnpm msix:vm` is the
-model), toast AUMID; the Store data-redirect rules from the 1.x README apply unchanged. Version 2.0.0 must be
-higher than the last 1.x Store version (1.4.x). Icons, signing hand-off (the owner signs; no keys in this repo), full
-third-party licence list (`cargo about` or `cargo deny`), README user guide, the 2.0 site changes
-([§12](#11-website)), manual Windows test checklist adapted from the 1.x README. AC: a release build passes every
-gate; the owner runs it on real Windows.
+2.0 is the **first version on the Microsoft Store** (2.0.0.0, the first submission to the app already reserved in
+Partner Center; no Tauri build is ever submitted). This milestone takes over the release steps planned for Tauri
+1.4.0. The source of truth for the identity is **[docs/STORE_IDENTITY.md](docs/STORE_IDENTITY.md)** (never edit
+its values without the owner): Identity Name `PedroMiguelRodriguesJorge.zWorkTracker`, Publisher
+`CN=1DEF8D7B-1D68-4604-8047-048DC92CF3A9`, display name "Pedro Miguel Rodrigues Jorge", family
+`PedroMiguelRodriguesJorge.zWorkTracker_54k2cbaqgvhqp`, Store ID `9P9RM9G0QBRC`, x64, version `2.0.0.0` (each
+later submission higher, last part 0). From the 1.x manifest (W/scripts/msix-manifest.mjs, verified in
+docs/PARITY.md §Store identity): Application Id `zWorkTracker`, StartupTask `zWorkTrackerStartup`,
+`runFullTrust`, MinVersion 10.0.19041.0, and the separate test identity. Store data-redirect rules from the 1.x
+README apply unchanged.
+
+Steps (the 1.x scripts `package-msix.mjs`, `make-pri.mjs`, `msix-vm.mjs` are the model; port or reuse their logic,
+never modify them in the old repo):
+
+1. **MSIX packages**, Store (unsigned: the Store signs it) and test identity; the 60 images incl.
+   `Square44x44Logo.targetsize-*_altform-unplated` cut from the same `icon.png` by the same rules; toast AUMID.
+2. **Icon index (PRI)** made with `makepri` in the owner's Windows VM (UTM), sent back and checked (all 60 image
+   paths, its own identity), kept in `packaging/msix/{store,test}/resources.pri`.
+3. **WACK**: run the Windows App Certification Kit in the VM on a **copy** of the Store package signed with an
+   ephemeral certificate (RSA 3072, subject exactly the Store Publisher, 7 days, code signing only, private key
+   deleted after signing). The Store package itself stays unsigned. Save the report.
+4. **Test install** in the VM with the test identity (signed with the owner's own test key, outside the repo).
+5. **10 Store screenshots**, 1920x1080, from the sample-data personas: web developer 4, software engineer 3, data
+   scientist 3 (screens chosen to show Timeline, Analysis incl. Share of time, Billing, exports, sync).
+6. **Listing text**: revise [docs/STORE_LISTING_NOTICE.md](docs/STORE_LISTING_NOTICE.md) (copied from the Tauri
+   repo, 1.3.2 wording) for 2.0: features, notices, requirements (no WebView2), version, privacy statements.
+7. **Privacy policy page** on the site (`site/privacy.html`), updated for 2.0 and linked from the listing.
+8. Version 2.0.0, full third-party licence list (`cargo about` or `cargo deny`), README user guide, the 2.0 site
+   changes ([§11](#11-website)), the manual Windows test checklist adapted from the 1.x README.
+
+AC: a release build passes every gate; WACK passes; the test install starts and runs in the VM; the owner runs it
+on real Windows; **an identity test** (in `cargo test`, run on every build) reads the generated
+`AppxManifest.xml` and asserts that `Identity/@Name`, `Identity/@Publisher` and
+`Properties/PublisherDisplayName` equal the values in docs/STORE_IDENTITY.md, and that the Package Family Name
+computed from Name and Publisher (Microsoft's publisher-id hash: SHA-256 of the UTF-16LE publisher, first 8 bytes,
+Crockford base32, 13 characters) is exactly `PedroMiguelRodriguesJorge.zWorkTracker_54k2cbaqgvhqp`. Port the 1.x
+test in W/scripts/msix-manifest.test.ts.
 
 ### Milestone 8: parity gate (release blocker)
 
 **No 2.0 release until all of these pass:**
 
-1. Re-run the inventory against the merged 1.4.0 (and any later 1.x) and update docs/PARITY.md; every
-   `1.4.0, follow as merged` row is rewritten to the merged behaviour.
+1. Re-run the inventory against the 1.x repo (in case it gained features) and update docs/PARITY.md; every
+   `2.0 native (1.4.0 design)` row is checked against its design (live-updates spec, subtask-tags plan with
+   Owner answers) and the 1.x code where it exists.
 2. **Every row of docs/PARITY.md is checked against the Tauri app** (side by side, same sample store) and ticked,
    or carries an owner-approved exception. The 7 `1.x-only` rows each have their 2.0 equivalent (e.g. the
    WebView2-missing message becomes a friendly start-up check for what 2.0 needs: a GPU/renderer fallback to the
    software renderer, a damaged or locked store, a missing data folder, with the same "Your data is safe." tone).
 3. **Visual parity** ([§7.2](#72-visual-parity)) passes for every screen and theme.
-4. **Responsiveness targets** ([§10.2](#102-targets-20-must-beat)) all pass on the Windows VM, with the Tauri 1.4.0
-   baseline recorded first.
-5. Data round trip: a store and sync folder written by 1.4.0 open in 2.0 and vice versa, and a 1.4.0 device and a
-   2.0 device sync and converge (sample data only).
+4. **Responsiveness targets** ([§10.2](#102-targets-20-must-beat)) all pass on the Windows VM, with the Tauri baseline
+   (the newest 1.x build, 1.3.3 or W) recorded first.
+5. Data round trip: a store and sync folder written by 1.3.3 (and W) open in 2.0 and vice versa, and a 1.x device
+   and a 2.0 device sync and converge (sample data only); subtask-tag overrides survive a 1.3.3 device.
+
+### Milestone 9: Store submission (owner)
+
+After the parity gate passes: the owner's **guided Partner Center submission** of 2.0.0.0 (the stack prepares
+the package, the listing text, screenshots, privacy URL and certification notes, and walks the owner through it;
+it never submits, signs in or publishes itself). Then the site switches to the 2.0 wording ([§11](#11-website)).
 
 ## 7. Parity
 
@@ -294,7 +332,7 @@ gate; the owner runs it on real Windows.
 
 The checklist is **[docs/PARITY.md](docs/PARITY.md)**: 402 lines, one per feature or rule, each with its source
 (README/howto line, spec, plan, or commit) and the milestone that delivers it. Status counts at 2026-11-04:
-361 `shipped 1.3.3`, 34 `1.4.0, follow as merged` (sticky Share level, live updates, subtask tags with Select
+361 `shipped 1.3.3`, 34 `2.0 native (1.4.0 design)` (sticky Share level, live updates, subtask tags with Select
 all/Deselect all, No tag when empty, unknown-field catch-all, copies reset to Same as task), 7
 `1.x-only, needs a 2.0 equivalent` (WebView2 checks, CSP, snapshot IPC, show-after-first-paint). Also there:
 the verified Store identity, the icon inventory, and what the app deliberately never does (no network calls, no
@@ -304,7 +342,7 @@ Each milestone ticks nothing; it implements its rows and tests them. Ticking hap
 
 Contradictions the inventory found in the 1.x docs (resolve against the code, not the docs):
 - Refresh model: the uncommitted 1.4.0 README/howto still describe a 30 s refresh; the live-updates spec replaces
-  it with no polling. Follow what 1.4.0 merges.
+  it with no polling. 2.0 builds the spec (no polling), never the 30 s draft.
 - Tray icon wording in the README (stopwatch) is stale; commit 47a7aff made it a round clock at 10:10, green dial
   with a play triangle while running. Use the icon files, not the README text.
 - README names root `app-icon.svg`/`app-icon-small.svg` as icon sources; they are stale. `assets/logo/logo.svg`
@@ -382,9 +420,9 @@ cargo build --release --target x86_64-pc-windows-gnu
 
 Two stages: quick like-for-like numbers on this Mac (macOS release builds of both, same sample store) from M1
 on, to steer the work; then the **binding numbers on the owner's Windows 11 VM** (UTM, the one the 1.x
-`pnpm msix:vm` flow already uses), Tauri 1.4.0 build vs Slint build, both x64, same VM, same settings, same
+`pnpm msix:vm` flow already uses), Tauri build (the newest 1.x: 1.3.3 or W) vs Slint build, both x64, same VM, same settings, same
 sample store holding **one year of data** (generated by a script in this repo, e.g. 12 projects, ~200 tasks,
-~2,500 segments; also the 1.x `store_bench` 50k stress size). **Record the Tauri 1.4.0 baselines first**, in
+~2,500 segments; also the 1.x `store_bench` 50k stress size). **Record the Tauri baselines first**, in
 `docs/MEASUREMENTS.md`, then measure 2.0 against the targets below. If the VM is Arm, x64 builds run under
 emulation for both apps: the comparison stays fair, but absolute numbers are pessimistic; say so next to them.
 Each number is the median of 10 runs with the spread.
@@ -432,7 +470,7 @@ The public site (z.rustcircle.com) now **lives in this repo**: `site/` was copie
 `.github/workflows/pages.yml` copied verbatim from 1.x (deploys `site/` through GitHub Actions on pushes to main
 that touch `site/**`; pinned action SHAs; no secrets). **No CNAME file**: with Actions deployment the custom
 domain is set in the repo's Pages settings, and the owner moves z.rustcircle.com to this repo himself (DNS
-unchanged). From now on **site changes for 1.4.0 are made here**, not in the old repo. The Slint badge is in the
+unchanged). From now on **all site changes are made here**, not in the old repo. The Slint badge is in the
 footer and always visible.
 
 Lines that must change for 2.0 (wording left as is for now):

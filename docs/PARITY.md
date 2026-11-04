@@ -3,18 +3,21 @@
 Every feature and behaviour rule of the 1.x Tauri app, one line each, with its source. 2.0 follows **every** one
 (the owner: "I want the app to follow every feature we implemented so far"). **M** = the PLAN.md milestone that
 delivers it. **Checked** = ticked only at the parity gate (PLAN.md milestone 8), after the line was compared with
-the Tauri app. Rows marked `1.4.0, follow as merged` are still landing in 1.x: implement them as 1.4.0 is finally
-merged, not as written here, and re-read the 1.x repo at that point.
+the Tauri app. **2.0 (Slint) is the first version on the Microsoft Store** (owner decision, 2026-11-04): no Tauri build
+goes to the Store and Tauri 1.4.0 is not finished. Rows marked `2.0 native (1.4.0 design)` are features designed for 1.4.0 (subtask
+tags from the 1.4.0 plan with the owner's answers, the reactive live-updates design, the sticky Share of time
+level) that **2.0 builds natively** from those designs; the parity check for them is against the design (and the
+1.x code where it exists), not against a released Tauri build.
 
-Inventory built read-only on 2026-11-04 from the sources below; re-run it against the 1.4.0 release before the gate.
+Inventory built read-only on 2026-11-04 from the sources below; re-run it against the 1.x repo before the gate in case it gained features.
 
 Read-only inventory, 2026-11-04. W = `/Users/p/Z/ZCode/z-work-tracker/.claude/worktrees/task-deletion-timeline-ad2298` (branch `claude/task-deletion-timeline-ad2298`, HEAD `fd51d79`; `main` = `0154df5` "Merge release 1.3.3 into main").
 
-Source keys: **R** = W/README.md (working tree; line numbers are of that file), **H** = W/site/howto.html, **S** = W/STORE_LISTING_NOTICE.md, **LU** = W/.stack/out/delegator/live-updates-spec.md, **P** = W/.stack/out/planner/20261104-0638-140-subtask-tags/plan.md, **P/OA** = P "Owner answers", commit shas from `git -C W log`.
+Source keys: **R** = W/README.md (working tree; line numbers are of that file), **H** = W/site/howto.html, **S** = W/STORE_LISTING_NOTICE.md, also in this repo as [STORE_LISTING_NOTICE.md](STORE_LISTING_NOTICE.md) (its S line numbers + 5, for the note at the top), **LU** = [from-1.4.0/live-updates-spec.md](from-1.4.0/live-updates-spec.md), **P** = [from-1.4.0/subtask-tags-plan.md](from-1.4.0/subtask-tags-plan.md), **P/OA** = P "Owner answers", commit shas from `git -C W log`.
 
 Status rules:
 - `shipped 1.3.3`: in docs and code reachable from `main` (0154df5).
-- `1.4.0, follow as merged`: only in `main..HEAD` (fd51d79), in uncommitted working-tree changes of W (the 30 s refresh text in R/H and edits to store.tsx, stepClock.ts, analysisClock.ts, TimelineTab.tsx and others), or only in LU / P. Follow the final merged form, not the draft.
+- `2.0 native (1.4.0 design)` (was "1.4.0, follow as merged" in the inventory): only in `main..HEAD` (fd51d79), in uncommitted working-tree changes of W (the 30 s refresh text in R/H and edits to store.tsx, stepClock.ts, analysisClock.ts, TimelineTab.tsx and others), or only in LU / P. Build the final design (LU Change 2/3, P with Owner answers), not the uncommitted 30 s refresh draft in R/H.
 - `1.x-only, needs a 2.0 equivalent`: tied to Tauri/WebView2/web stack; keep the idea, not the mechanism.
 
 ## Setup & first run
@@ -53,7 +56,7 @@ Status rules:
 | 25 | Fixed fee: Analysis shows effective hourly rate = fee / billable hours | R L349 | shipped 1.3.3 | 2 | [ ] |
 | 26 | Budget in hours or of the fixed fee; warns at 80% and 100% on screen and once per threshold as a system notification | R L349 | shipped 1.3.3 | 2 | [ ] |
 | 27 | Fee-based budget values time at the project rate as target rate; says so when none set | R L349 | shipped 1.3.3 | 2 | [ ] |
-| 28 | On-screen budget counts the running task up to now and moves with live refresh | R L349 (uncommitted); LU r2 | 1.4.0, follow as merged | 2 | [ ] |
+| 28 | On-screen budget counts the running task up to now and moves with live refresh | R L349 (uncommitted); LU r2 | 2.0 native (1.4.0 design) | 2 | [ ] |
 | 29 | Project may have its own client zone (used for its entries in Show both) | R L270 | shipped 1.3.3 | 2 | [ ] |
 | 30 | Project may override the rounding increment | R L305; 56a041e | shipped 1.3.3 | 2 | [ ] |
 | 31 | Rate is tied to the task's current project; moving a task re-derives earnings | R L1097 | shipped 1.3.3 | 2 | [ ] |
@@ -100,17 +103,17 @@ Status rules:
 | 67 | Removing the active item from the description clears the active subtask | R L327 | shipped 1.3.3 | 2 | [ ] |
 | 68 | Copying a task keeps subtask text, clears ticks, carries no time | R L327 | shipped 1.3.3 | 2 | [ ] |
 | 69 | Subtask ids for version-1 task lists derived from task id + position (same on every device) | R L664 | shipped 1.3.3 | 2 | [ ] |
-| 70 | Subtask tags: a subtask can carry a subset of its task's tags; default "Same as task" | P Goal, Semantics | 1.4.0, follow as merged | 2 | [ ] |
-| 71 | Tags button on each subtask row of the task card (beside time and Make active) showing effective chips or "Same as task" | P UI baseline; P/OA Q3 | 1.4.0, follow as merged | 2 | [ ] |
-| 72 | Popover: "Same as task" at top, then task's tags as checkboxes, plus one Select all / Deselect all toggle | P/OA Q3 | 1.4.0, follow as merged | 2 | [ ] |
-| 73 | Popover keyboard: Tab to button, Enter/Space opens, arrows move, Space toggles, Esc closes and refocuses button | P UI baseline | 1.4.0, follow as merged | 2 | [ ] |
-| 74 | Subtask tag control disabled in read-only and held states; not in the description editor or new-task form | P UI baseline; P/OA Q3 | 1.4.0, follow as merged | 2 | [ ] |
-| 75 | Empty subset (all unticked, or last kept tag removed from task) counts as "No tag" | P Semantics; P/OA Q1 | 1.4.0, follow as merged | 2 | [ ] |
-| 76 | Effective tags = override ∩ task's live tags in task order; no override / no subtask / unknown subtask id = task tags | P Semantics | 1.4.0, follow as merged | 2 | [ ] |
-| 77 | Adding a task tag reaches only "Same as task" subtasks; removing one prunes it from all overrides in the same write | P Semantics | 1.4.0, follow as merged | 2 | [ ] |
-| 78 | Overrides retroactive to all the subtask's logged time | P Semantics | 1.4.0, follow as merged | 2 | [ ] |
-| 79 | Stored as overrides only, per entry stamped; reset = entry with tags null + stamp; skipped when empty (file byte-identical to 1.3.x) | P Semantics | 1.4.0, follow as merged | 2 | [ ] |
-| 80 | Copies and templates start at "Same as task" (overrides not carried) | P Semantics; P/OA Q5 | 1.4.0, follow as merged | 2 | [ ] |
+| 70 | Subtask tags: a subtask can carry a subset of its task's tags; default "Same as task" | P Goal, Semantics | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 71 | Tags button on each subtask row of the task card (beside time and Make active) showing effective chips or "Same as task" | P UI baseline; P/OA Q3 | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 72 | Popover: "Same as task" at top, then task's tags as checkboxes, plus one Select all / Deselect all toggle | P/OA Q3 | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 73 | Popover keyboard: Tab to button, Enter/Space opens, arrows move, Space toggles, Esc closes and refocuses button | P UI baseline | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 74 | Subtask tag control disabled in read-only and held states; not in the description editor or new-task form | P UI baseline; P/OA Q3 | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 75 | Empty subset (all unticked, or last kept tag removed from task) counts as "No tag" | P Semantics; P/OA Q1 | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 76 | Effective tags = override ∩ task's live tags in task order; no override / no subtask / unknown subtask id = task tags | P Semantics | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 77 | Adding a task tag reaches only "Same as task" subtasks; removing one prunes it from all overrides in the same write | P Semantics | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 78 | Overrides retroactive to all the subtask's logged time | P Semantics | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 79 | Stored as overrides only, per entry stamped; reset = entry with tags null + stamp; skipped when empty (file byte-identical to 1.3.x) | P Semantics | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 80 | Copies and templates start at "Same as task" (overrides not carried) | P Semantics; P/OA Q5 | 2.0 native (1.4.0 design) | 2 | [ ] |
 
 ## Timer
 
@@ -151,7 +154,7 @@ Status rules:
 | 108 | OS shutdown relies on exit event; else heartbeat recovery within ~30 s | R L1079 | shipped 1.3.3 | 3 | [ ] |
 | 109 | Quit syncs once and releases the lease | R L90, L111 | shipped 1.3.3 | 3 | [ ] |
 | 110 | Read-only PC: tray Resume shows toast "A is using zWorkTracker, so this computer is read-only. Take over from the banner to work here.", raises window, starts nothing | R L1010 | shipped 1.3.3 | 3 | [ ] |
-| 111 | Tray elapsed stays current while window hidden | LU r3 | 1.4.0, follow as merged | 3 | [ ] |
+| 111 | Tray elapsed stays current while window hidden | LU r3 | 2.0 native (1.4.0 design) | 3 | [ ] |
 
 ## Time away & reminders
 
@@ -181,7 +184,7 @@ Status rules:
 | 128 | Day header: Billable and Exact totals plus per-project totals with earnings | R L240 | shipped 1.3.3 | 1, 4 | [ ] |
 | 129 | Earnings everywhere show Billable amount, stepping at the increment; no countdown; Exact amount only in Excel Segment details | R L242; 76c33f1 | shipped 1.3.3 | 1, 4 | [ ] |
 | 130 | With rounding Up the first increment shows when work starts that task-day; increment Off follows exact time | R L242 | shipped 1.3.3 | 1, 4 | [ ] |
-| 131 | A billing step shows at the second it falls due on Timeline, Analysis and the running card | R L244 (uncommitted) | 1.4.0, follow as merged | 1, 4 | [ ] |
+| 131 | A billing step shows at the second it falls due on Timeline, Analysis and the running card | R L244 (uncommitted) | 2.0 native (1.4.0 design) | 1, 4 | [ ] |
 | 132 | Click selects an entry (opens nothing); Ctrl/Cmd+click toggles; Shift+click selects a run across days | R L246 | shipped 1.3.3 | 1, 4 | [ ] |
 | 133 | Keyboard: Space selects, Ctrl+Space toggles, Shift+Arrow extends, Ctrl+A selects visible, Esc clears | R L246; 626c40e | shipped 1.3.3 | 1, 4 | [ ] |
 | 134 | Row keeps separate buttons: task name (shows card) and pencil (edit) | R L246 | shipped 1.3.3 | 1, 4 | [ ] |
@@ -292,8 +295,8 @@ Status rules:
 | 209 | Legend hours follow Billable/Exact basis and sum to centre total | R L262 | shipped 1.3.3 | 5 | [ ] |
 | 210 | Level switch: Projects / Tasks / Subtasks / Tags | R L262 | shipped 1.3.3 | 5 | [ ] |
 | 211 | Default level follows filter: Projects (no/several projects), Tasks (one project), Subtasks (one task); Tags only by hand | R L262 | shipped 1.3.3 | 5 | [ ] |
-| 212 | Once picked, a level stays however the filter changes; only the user switches it | R L262; fd51d79 | 1.4.0, follow as merged | 5 | [ ] |
-| 213 | Picked Subtasks with no subtask time: shows another level meanwhile, returns when subtask time returns | R L262; fd51d79 | 1.4.0, follow as merged | 5 | [ ] |
+| 212 | Once picked, a level stays however the filter changes; only the user switches it | R L262; fd51d79 | 2.0 native (1.4.0 design) | 5 | [ ] |
+| 213 | Picked Subtasks with no subtask time: shows another level meanwhile, returns when subtask time returns | R L262; fd51d79 | 2.0 native (1.4.0 design) | 5 | [ ] |
 | 214 | Row names only what the filter leaves open; tooltip and accessible name give the full path | R L262 | shipped 1.3.3 | 5 | [ ] |
 | 215 | Time on no subtask is its own row `<Task> (no subtask)`; Subtasks level off while nothing logged on one | R L262 | shipped 1.3.3 | 5 | [ ] |
 | 216 | Tags level: each exact tag combination is a row (`Design + Client`), untagged `No tag`, each task counted once | R L262 | shipped 1.3.3 | 5 | [ ] |
@@ -301,9 +304,9 @@ Status rules:
 | 218 | > 9 rows: top 8 plus `Other (N tasks)` / `Other (N subtasks)` / `Other (N combinations)`; View data lists all | R L262 | shipped 1.3.3 | 5 | [ ] |
 | 219 | Percentages whole numbers by largest remainder summing to 100; share rounding to 0 reads `<1%` | R L262; 68da0cd | shipped 1.3.3 | 5 | [ ] |
 | 220 | Legend shows hours, so Hide earnings doesn't change it | R L262 | shipped 1.3.3 | 5 | [ ] |
-| 221 | Share of time Tags, tag filter, tag metrics and Excel Analytics count subtask time under its effective tags (per piece of time) | P Done-when 3, Semantics | 1.4.0, follow as merged | 5 | [ ] |
-| 222 | Excel tags sheet stays overlapping, one row per tag, counting segments | P Semantics | 1.4.0, follow as merged | 5 | [ ] |
-| 223 | Rust and TS analysis held equal by parity fixtures (analytics-parity.json; subtask-tags-parity.json) | R L407; P | shipped 1.3.3 (subtask part 1.4.0) | 5 | [ ] |
+| 221 | Share of time Tags, tag filter, tag metrics and Excel Analytics count subtask time under its effective tags (per piece of time) | P Done-when 3, Semantics | 2.0 native (1.4.0 design) | 5 | [ ] |
+| 222 | Excel tags sheet stays overlapping, one row per tag, counting segments | P Semantics | 2.0 native (1.4.0 design) | 5 | [ ] |
+| 223 | Rust and TS analysis held equal by parity fixtures (analytics-parity.json; subtask-tags-parity.json) | R L407; P | shipped 1.3.3 (subtask part: 2.0 native) | 5 | [ ] |
 
 ## Billing, earnings, exports
 
@@ -320,7 +323,7 @@ Status rules:
 | 232 | Voiding takes its share off the day; day rounds under the rule in force now; older summaries keep issued amounts | R L365-367 | shipped 1.3.3 | 5 | [ ] |
 | 233 | Summary from another zone shared out over this zone's days; rate change in a day bills each row at its own rates | R L368-370 | shipped 1.3.3 | 5 | [ ] |
 | 234 | Summary amounts stored at creation, read as stored, never change | R L372 | shipped 1.3.3 | 5 | [ ] |
-| 235 | Unbilled time per project counts a running task up to now and moves with live refresh | R L355 (uncommitted); LU r2 | 1.4.0, follow as merged | 5 | [ ] |
+| 235 | Unbilled time per project counts a running task up to now and moves with live refresh | R L355 (uncommitted); LU r2 | 2.0 native (1.4.0 design) | 5 | [ ] |
 | 236 | Amounts exact (rate cents × seconds); row rounds half up to cents; total rounds sum of exact once; PDF, summaries, Excel, Analysis agree | R L390 | shipped 1.3.3 | 5 | [ ] |
 | 237 | Where visible rows differ from total by a cent, PDF, summary CSV/text, Billing tab and Excel Earnings title say so | R L390 | shipped 1.3.3 | 5 | [ ] |
 | 238 | Rate change within a task-day: rounding difference goes to last rate | R L390 | shipped 1.3.3 | 5 | [ ] |
@@ -439,8 +442,8 @@ Status rules:
 | 336 | Segment times, heartbeats and version dates use the wall clock, not stamps | R L99 | shipped 1.3.3 | 6 | [ ] |
 | 337 | Clock-behind warning when ≥ 2 min behind newest seen change; not dismissible; two wordings (other PC / this PC); gap "5 min", "1 h 30 min", "3 days"; ≥ 1 day variant; clears by itself | R L101-109 | shipped 1.3.3 | 6 | [ ] |
 | 338 | Sync file format unchanged since 1.3.1 (byte-for-byte round-trip tests); keep SCHEMA_VERSION 2 | 3777188; P Repo facts | shipped 1.3.3 | 6 | [ ] |
-| 339 | Catch-all for unknown fields on Task and Segment, so a newer version's fields survive | P/OA Q2 | 1.4.0, follow as merged | 6 | [ ] |
-| 340 | Subtask-tag overrides survive a round trip through a 1.3.3 device (stamp rule) | P Done-when 2, C1 | 1.4.0, follow as merged | 6 | [ ] |
+| 339 | Catch-all for unknown fields on Task and Segment, so a newer version's fields survive | P/OA Q2 | 2.0 native (1.4.0 design) | 6 | [ ] |
+| 340 | Subtask-tag overrides survive a round trip through a 1.3.3 device (stamp rule) | P Done-when 2, C1 | 2.0 native (1.4.0 design) | 6 | [ ] |
 
 ## Live updates/reactivity
 
@@ -448,16 +451,16 @@ Status rules:
 |---|---|---|---|---|---|
 | 341 | Views refresh immediately after every change the user makes | 7107403 | shipped 1.3.3 | 1 | [ ] |
 | 342 | Shipped 1.3.3: only components showing time follow the clock; clock stops while hidden; Analysis redraws when a figure can change | 0920de8, d6d6825, 6ce45ef | shipped 1.3.3 | 1 | [ ] |
-| 343 | Every view recomputes when opened (tab switch, window shown from tray/minimised) | LU r2; R L244 (uncommitted) | 1.4.0, follow as merged | 1 | [ ] |
-| 344 | Final rule: no polling; all views derive reactively from one store plus a shared 1 s running-time signal (active only while a task runs) | LU Change 2 | 1.4.0, follow as merged | 1 | [ ] |
-| 345 | Views re-render only when their output changes (minute-level figures once a minute) | LU Change 2 | 1.4.0, follow as merged | 1 | [ ] |
-| 346 | Covered views: Analysis (all charts incl. Share of time centre, cards, insights, comparison, View data), Timeline totals/axes/headers/earnings, Billing unbilled, budget 80/100% warnings, task cards and subtask times | LU r2 | 1.4.0, follow as merged | 1 | [ ] |
-| 347 | Hidden/minimised: no recomputation; on show everything catches up at once; timing never stops | LU r3; R L244 | 1.4.0, follow as merged | 1 | [ ] |
-| 348 | User events (start/pause/resume/stop, corrections, added time, tag/subtask changes) and sync changes show immediately everywhere; event recorded first, then shown | LU r4, r7, r8 | 1.4.0, follow as merged | 1 | [ ] |
-| 349 | A refresh never resets chart level, filters, selection, scroll, open View data tables or form input; created summaries stay frozen | LU r5; R L244 | 1.4.0, follow as merged | 1 | [ ] |
-| 350 | No view holds a mount-time snapshot | LU r9 | 1.4.0, follow as merged | 1 | [ ] |
-| 351 | Granular subscriptions: each component subscribes to its slice (entity id, range, tags, settings, running clock); backend emits typed change events after every write and sync merge; unsubscribe on unmount | LU Change 3 | 1.4.0, follow as merged | 1 | [ ] |
-| 352 | Tests: per-view hooks, fake clock (views advance, 1 s timer, hide/show catch-up, no recompute hidden), render-count isolation | LU r6, Change 3 | 1.4.0, follow as merged | 1 | [ ] |
+| 343 | Every view recomputes when opened (tab switch, window shown from tray/minimised) | LU r2; R L244 (uncommitted) | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 344 | Final rule: no polling; all views derive reactively from one store plus a shared 1 s running-time signal (active only while a task runs) | LU Change 2 | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 345 | Views re-render only when their output changes (minute-level figures once a minute) | LU Change 2 | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 346 | Covered views: Analysis (all charts incl. Share of time centre, cards, insights, comparison, View data), Timeline totals/axes/headers/earnings, Billing unbilled, budget 80/100% warnings, task cards and subtask times | LU r2 | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 347 | Hidden/minimised: no recomputation; on show everything catches up at once; timing never stops | LU r3; R L244 | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 348 | User events (start/pause/resume/stop, corrections, added time, tag/subtask changes) and sync changes show immediately everywhere; event recorded first, then shown | LU r4, r7, r8 | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 349 | A refresh never resets chart level, filters, selection, scroll, open View data tables or form input; created summaries stay frozen | LU r5; R L244 | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 350 | No view holds a mount-time snapshot | LU r9 | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 351 | Granular subscriptions: each component subscribes to its slice (entity id, range, tags, settings, running clock); backend emits typed change events after every write and sync merge; unsubscribe on unmount | LU Change 3 | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 352 | Tests: per-view hooks, fake clock (views advance, 1 s timer, hide/show catch-up, no recompute hidden), render-count isolation | LU r6, Change 3 | 2.0 native (1.4.0 design) | 1 | [ ] |
 
 ## Windows integration & Store build
 
@@ -479,7 +482,7 @@ Status rules:
 | 366 | MSIX version = app version + `.0` (1.3.3 → 1.3.3.0) | R L805 | shipped 1.3.3 | 7 | [ ] |
 | 367 | Store and test identities in one script; test package family `rustcircle.zWorkTracker.Test_ym7m1j5c19s9r` has its own data folder | R L769 | shipped 1.3.3 | 7 | [ ] |
 | 368 | 60 MSIX images: StoreLogo, Square44x44Logo, Square150x150Logo at 5 scales + 14 target sizes with `_altform-unplated` and `_altform-lightunplated`; needs `resources.pri` | R L777 | shipped 1.3.3 | 7 | [ ] |
-| 369 | MSIX built 1.4.0.0 for 1.4.0 | P Done-when 4 | 1.4.0, follow as merged | 7 | [ ] |
+| 369 | MSIX version 2.0.0.0: the first Store submission (no Tauri build goes to the Store; see STORE_IDENTITY.md) | P Done-when 4 | 2.0 native (1.4.0 design) | 7 | [ ] |
 | 370 | Windows session/package queries isolated in one crate (only unsafe code) | R L243, L676 | shipped 1.3.3 | 7 | [ ] |
 | 371 | Self-signed code signing route (SHA-256 + RFC 3161 timestamp) for own PCs | R L817 | shipped 1.3.3 | 7 | [ ] |
 
@@ -510,7 +513,7 @@ Status rules:
 | 387 | Colour picker fully keyboard-operable | R L339 | shipped 1.3.3 | 1 (every screen) | [ ] |
 | 388 | Share of time slices have full-path accessible names | R L262 | shipped 1.3.3 | 1 (every screen) | [ ] |
 | 389 | Task delete deliberately not keyboard-operable (by design) | R L1086 | shipped 1.3.3 | 1 (every screen) | [ ] |
-| 390 | Subtask tag popover keyboard model | P UI baseline | 1.4.0, follow as merged | 1 (every screen) | [ ] |
+| 390 | Subtask tag popover keyboard model | P UI baseline | 2.0 native (1.4.0 design) | 1 (every screen) | [ ] |
 | 391 | Dialog headings take focus (wizard, voided summary) | b4739c3, 2697419 | shipped 1.3.3 | 1 (every screen) | [ ] |
 
 ## Error/runtime checks
@@ -531,7 +534,8 @@ Status rules:
 
 ## Store identity
 
-Verified verbatim:
+The source of truth is [STORE_IDENTITY.md](STORE_IDENTITY.md); the PLAN.md milestone 7 identity test checks the
+manifest and the computed PFN against it. Verified verbatim from the 1.x sources:
 
 | Value | Text | Defined in |
 |---|---|---|
@@ -579,5 +583,5 @@ No `packaging/msix/*/resources.pri` exists in W yet (README L1075: comes with 1.
 - No subtasks or tags in CSV/PDF exports (R L407; P Repo facts).
 - No macOS lock signal (R L1081).
 - Start with Windows never starts hidden in the tray (R L219).
-- Subtask tags outside the task's tags; tags in billing summaries or quotes: non-goals for 1.4.0 (P Non-goals).
-- No polling for view refresh in the final 1.4.0 design (LU Change 2).
+- Subtask tags outside the task's tags; tags in billing summaries or quotes: non-goals of the subtask-tags design, also for 2.0 unless the owner changes them (P Non-goals).
+- No polling for view refresh (LU Change 2), in 2.0 as designed for 1.4.0.
