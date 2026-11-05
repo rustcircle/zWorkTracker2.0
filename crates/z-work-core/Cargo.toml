@@ -1,0 +1,40 @@
+[package]
+name = "z-work-core"
+version = "1.3.3"
+edition.workspace = true
+rust-version.workspace = true
+description = "Tauri-independent core: state machine, persistence, sync merge, reports"
+license = "MIT"
+authors = ["Pedro Miguel Rodrigues Jorge <pmrj@rustcircle.com>"]
+repository = "https://github.com/rustcircle/zWorkTracker2.0"
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+chrono-tz = "0.10"
+rust_xlsxwriter = "0.102"
+pdf-writer = "0.15"
+png = "0.18"
+miniz_oxide = "0.9"
+# Cut the bundled PDF font down to each document. No variable fonts here, so none of their dependencies.
+subsetter = { version = "0.2", default-features = false }
+ttf-parser = { version = "0.25", default-features = false, features = ["std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v4"] }
+# The local store. `bundled` compiles SQLite (3.54.1 in libsqlite3-sys 0.39.1) into the app, the same on every system.
+rusqlite = { version = "0.41.1", default-features = false, features = ["bundled", "cache"] }
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+
+[dev-dependencies]
+proptest = "1"
+tempfile = "3"
+
+[lints]
+workspace = true
+
+[features]
+# Test-only hooks used by the shell's `smoke` feature (scripts/native-smoke.mjs). Never enabled in shipped builds.
+test-hooks = []

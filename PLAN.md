@@ -9,17 +9,21 @@ with no other context. Read it top to bottom before writing code, then start at 
 - **Current app (1.x):** `/Users/p/Z/ZCode/z-work-tracker`. Tauri 2 + React/TypeScript UI + Rust core, at 1.3.3,
   MIT, remote https://github.com/rustcircle/z-work-tracker. It never goes to the Store: **the owner decided on 2026-11-04 that 2.0 (Slint) is the first
   version on the Microsoft Store** (2.0.0.0, the first submission); Tauri 1.4.0 is not finished and is not released.
-  The owner finds it heavy and sluggish (WebView2).
+  The owner finds it heavy and sluggish (WebView2). Since 2026-11-04 the 1.x repo is **reference only and may be
+  deleted** (the owner's words: "I might remove or delete z-work-tracker repo"); a gitignored read-only copy at
+  `a88c1aa` sits in the main checkout at `reference/z-work-tracker`.
 - **This repo (2.0):** `/Users/p/Z/ZCode/zWorkTracker`. A native Rust desktop app with a **Slint** UI over the
-  **same Rust core**, reading and writing the **same data** as the Tauri app.
+  **same Rust core**, reading and writing the **same data** as the Tauri app. The core is **vendored** at
+  `crates/z-work-core`, copied from 1.x `a88c1aa` ([§4](#4-dependency-strategy-for-z-work-core)).
 - The owner accepted Slint's **Royalty-free License 2.0** on 2026-11-04 (see [§9](#9-license-obligations)).
 - Dev host: Apple M3 Mac, rustc/cargo 1.99.1, rustup targets `aarch64-apple-darwin` and `x86_64-pc-windows-gnu`,
   MinGW at `/opt/homebrew/bin/x86_64-w64-mingw32-gcc`. No `cargo-xwin`, no Wine, no Windows VM.
 
 ### Ground rules (from the owner, hold for every session)
 
-1. **Never modify `/Users/p/Z/ZCode/z-work-tracker`.** Read it, depend on it, never edit, commit or build inside it
-   (builds of it go to a `CARGO_TARGET_DIR` outside it).
+1. **Never modify `/Users/p/Z/ZCode/z-work-tracker`.** Read it, never edit, commit or build inside it (builds of it
+   go to a `CARGO_TARGET_DIR` outside it). Nothing here builds from it any more: it may be gone, so a check that
+   needs 1.x sources looks for `reference/z-work-tracker` too.
 2. Never add a git remote or push (the owner adds the remote). Never publish, never delete user data, never enter
    passwords. Use `trash`, not `rm`, for anything that is not a build output.
 3. **Never touch the owner's real app data.** Development, tests and measurements use sample stores in a temp or
@@ -32,11 +36,15 @@ with no other context. Read it top to bottom before writing code, then start at 
 
 ## 2. What the existing app is (read these first)
 
+The 1.x repo is reference only and may be deleted; read it, or its copy `reference/z-work-tracker` (main checkout,
+gitignored, at `a88c1aa`), for behaviour and design. The core and the shared fixtures are in this repo
+([§4](#4-dependency-strategy-for-z-work-core)).
+
 **The newest 1.x code is in the worktree `z-work-tracker/.claude/worktrees/task-deletion-timeline-ad2298`
 (W)**: 1.3.3 plus the unfinished 1.4.0 work (sticky Share of time level, live updates, subtask tags). Read W in
 preference to the main checkout. The 1.4.0 designs (live updates, subtask tags) are **2.0 features built
 natively here**, from the spec and plan below, not "followed" from a Tauri release. The full feature list with sources
-is **[docs/PARITY.md](docs/PARITY.md)** (402 lines).
+is **[docs/PARITY.md](docs/PARITY.md)** (420 lines).
 
 | Source | What for |
 |---|---|
@@ -48,10 +56,10 @@ is **[docs/PARITY.md](docs/PARITY.md)** (402 lines).
 | W/`assets/logo/`, `src-tauri/icons/` | Logo master, icon generator, tray icons |
 | `z-work-tracker/README.md` §User guide (lines ~151-526) | Behaviour spec: timer states, tray, time away, timeline, analysis, billing, sync |
 | `z-work-tracker/site/howto.html` | The user-facing how-to, same features in plain words |
-| `z-work-tracker/src-tauri/crates/z-work-core/src/` | The core we reuse: `service.rs` (transactions, `Service`), `view.rs` (UI snapshot), `machine.rs`, `analytics.rs`, `billing.rs`, `sync.rs`, `lease.rs`, `changes.rs`, `tray.rs`, `report.rs`/`pdf.rs`/`xlsx.rs`/`csv.rs` |
+| `crates/z-work-core/src/` (here; copied from 1.x `src-tauri/crates/z-work-core/src/` at `a88c1aa`) | The core we reuse: `service.rs` (transactions, `Service`), `view.rs` (UI snapshot), `machine.rs`, `analytics.rs`, `billing.rs`, `sync.rs`, `lease.rs`, `changes.rs`, `tray.rs`, `report.rs`/`pdf.rs`/`xlsx.rs`/`csv.rs` |
 | `z-work-tracker/src-tauri/src/lib.rs` | How the Tauri shell opens the store, runs heartbeat/sync threads, the tray, `data_dir()` (~line 1854) |
 | `z-work-tracker/src/lib/`, `src/features/` | Logic that today lives **only in TypeScript** (see risk R1) |
-| `z-work-tracker/fixtures/*.json` | Parity fixtures shared by Rust and TS (`analytics-parity`, `billing-fixtures`, `patch-task-parity`, `tz-fixtures`) |
+| `fixtures/*.json` (here; copied from 1.x `fixtures/` at `a88c1aa`) | Parity fixtures shared by Rust and TS (`analytics-parity`, `billing-fixtures`, `patch-task-parity`, `tz-fixtures`) |
 
 Key facts found so far:
 
@@ -74,70 +82,59 @@ zWorkTracker/
   Cargo.toml              workspace (resolver 3, edition 2024, rust-version 1.99, same lints as the core)
   rust-toolchain.toml     stable + rustfmt, clippy, target x86_64-pc-windows-gnu
   crates/
+    z-work-core/          the core, vendored: copied from 1.x src-tauri/crates/z-work-core at a88c1aa (§4)
+      tests/1x-src/       two 1.x TypeScript files the core's tests compare against (copied with it)
     zwt-app/              the binary: main.rs, window, tray, menus, platform glue
       ui/                 .slint files: app.slint, timeline.slint, share.slint, about.slint, ...
       build.rs            slint-build
     zwt-bridge/           UI-independent adapter over z-work-core: the event hub, per-topic view models,
                           the 1 s clock, the background worker (sync, heartbeat). Unit-testable without Slint.
-    zwt-ui-logic/         (if needed) ports of TS-only logic, tested against z-work-tracker/fixtures/*.json
+    zwt-ui-logic/         (if needed) ports of TS-only logic, tested against fixtures/*.json
+  fixtures/               the 1.x parity fixtures (*.json), copied from 1.x fixtures/ at a88c1aa
   assets/                 the 1.x icon sources (logo.svg, build-icons.py, tray-*.svg), copied verbatim in M1
   site/                   the public website (z.rustcircle.com), moved here from the 1.x repo (done, [§11](#11-website))
   .github/workflows/pages.yml   deploys site/ to GitHub Pages (done, copied verbatim from 1.x)
   docs/
     PARITY.md             the exhaustive feature checklist (done)
     site-slint-badge.html attribution badge snippet (done; the badge is live in site/index.html)
-    DEPENDENCIES.md       the core dependency strategy, written in M1
+    DEPENDENCIES.md       the vendored core (provenance, local edits, pulling 1.x changes), Slint, MinGW; M1
     MEASUREMENTS.md       Slint vs Tauri numbers, written in M1 and updated per milestone
   LICENSE, THIRD_PARTY_NOTICES.md, README.md, PLAN.md
 ```
 
 ## 4. Dependency strategy for z-work-core
 
-Requirement: builds **locally** against the sibling checkout and **from a fresh clone** on another machine or CI,
-without editing the other repo and without copying its code.
-
-**Chosen: a git dependency pinned to a revision, plus a gitignored local override.**
+**Vendored at `crates/z-work-core`, copied from 1.x `a88c1aa`.** The owner decided on 2026-11-04 ("could you copy
+over core into this repo and link against/reference that instead because I might remove or delete z-work-tracker
+repo"): the 1.x repo is reference only and may be deleted, and nothing here builds from it.
 
 ```toml
-# Cargo.toml (committed)
+# Cargo.toml
+[workspace]
+members = ["crates/z-work-core", "crates/zwt-app", "crates/zwt-bridge", "crates/zwt-ui-logic"]
+
 [workspace.dependencies]
-z-work-core = { git = "https://github.com/rustcircle/z-work-tracker", rev = "<full sha>" }
-z-work-session = { git = "https://github.com/rustcircle/z-work-tracker", rev = "<full sha>" }  # only if used
+z-work-core = { path = "crates/z-work-core" }
 ```
 
-```toml
-# .cargo/config.toml (gitignored, local only)
-[patch."https://github.com/rustcircle/z-work-tracker"]
-z-work-core = { path = "../z-work-tracker/src-tauri/crates/z-work-core" }
-z-work-session = { path = "../z-work-tracker/src-tauri/crates/z-work-session" }
-```
+- **What was copied**, with `git archive` from commit `a88c1aa82d5e14179f18349172e0b4c6e6715f5f` of
+  https://github.com/rustcircle/z-work-tracker (not from a working tree): the crate `src-tauri/crates/z-work-core`
+  (sources, examples, the PDF fonts, proptest regressions, its cloud fixtures), the parity fixtures `fixtures/*.json`
+  into `fixtures/`, and the two 1.x TypeScript files its tests compare against into
+  `crates/z-work-core/tests/1x-src/`. Every copied file equals its `a88c1aa` blob.
+- **Local edits** are paths (fixtures, the licence, the two TypeScript files) and the `repository` URL. The list,
+  the commands and how to pull a later 1.x change by hand are in [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md).
+- The crate is a workspace member: it inherits edition 2024, rust-version 1.99 and the lints from this workspace
+  (the same as 1.x `src-tauri/Cargo.toml`), and `cargo test --workspace` runs its tests too. `Cargo.lock` holds it
+  as a path package; its dev-dependency `proptest` (1.12.0, as in the 1.x lock) is locked here now.
+- The package keeps its 1.x version (1.3.3), which the core writes as the app version into lease records, version
+  files and the store. Changing it is a decision of its own.
+- **Core changes 2.0 needs are made here**, in `crates/z-work-core`, each in its own commit.
+  [docs/CORE_REQUESTS.md](docs/CORE_REQUESTS.md) lists what 2.0 has worked around in `zwt-bridge` so far.
 
-Why: Cargo finds a package by name anywhere in a git repo, and the core crates inherit `edition`, `rust-version`
-and `lints` from the other repo's workspace root (`src-tauri/Cargo.toml`), which Cargo reads from the git checkout.
-The pin makes a fresh clone reproducible. The patch makes local work use the sibling checkout, so core changes made
-in the other repo (by its own sessions) show up here without bumping the pin. Ship and CI builds use the pin only.
-Commit `Cargo.lock` (it's an application).
-
-Facts and checks for M1:
-
-- **The other repo's local `main` (0154df5, release 1.3.3) is 2 commits ahead of `origin/main` (19d15ff).**
-  Until the owner pushes it, a fresh clone pinned to 0154df5 cannot build. Pin the newest revision that is **on
-  GitHub** if it has the API needed, otherwise pin 0154df5 and write in README "push z-work-tracker main first".
-  Bump the pin deliberately (one commit, "Bump z-work-core to <sha>") when the core changes.
-- Verify whether Cargo needs to fetch the git source even when every package from it is patched (it may, to build
-  the lock file). If it does and the rev isn't pushed, use `net.offline`/`--offline` with a lock produced from the
-  patch, or fall back to option B. Record the result in `docs/DEPENDENCIES.md`.
-- Check that the core builds as a dependency: the core's `[lints] workspace = true` and `unsafe_code = "forbid"`
-  come along; its `#[cfg(test)]` licence test reads `../../../LICENSE` and never runs from here.
-
-Alternatives if the above fails: (B) git submodule of z-work-tracker at `vendor/z-work-tracker` with path deps
-(works offline and fresh, costs submodule friction, is not a copy); (C) publish `z-work-core` to crates.io or a
-private registry (cleanest long-term, needs the owner's decision); (D) a plain `path` dep to `../z-work-tracker`
-(local only, fresh clones must check both repos out side by side; the worst one).
-
-Core changes that 2.0 needs (e.g. a public change hook, a public `mutate_system`, a non-test sample-data builder,
-a Rust port of TS-only rules) are **requested from the other repo as notes for the owner**, not edited there. Until
-they land, wrap or work around them in `zwt-bridge`.
+History: until this change (Milestone 1) the core was a git dependency pinned to `a88c1aa` plus a gitignored
+`.cargo/config.toml` path override to the sibling checkout, so that no code was copied. It worked, but every build
+needed the 1.x repo or its GitHub copy.
 
 ## 5. Reactive architecture
 
@@ -195,8 +192,11 @@ Already done in the setup commit: `git init -b main`, `.gitignore`, MIT `LICENSE
 
 1. Workspace, `rust-toolchain.toml`, crates `zwt-app` and `zwt-bridge`, the core dependency per [§4](#4-dependency-strategy-for-z-work-core),
    `docs/DEPENDENCIES.md`.
-2. Slint backend/renderer that cross-compiles with MinGW: start with the `winit` backend and the **femtovg** or
-   **software** renderer; avoid Skia unless its prebuilt download works (that download would need approval).
+2. Slint backend/renderer that cross-compiles with MinGW: the `winit` backend with the **femtovg-wgpu** renderer
+   (FemtoVG on wgpu), chosen in code (`crates/zwt-app/src/renderer.rs`): Metal on macOS; Direct3D 12 on Windows,
+   then Vulkan; never OpenGL (owner decision 2026-11-04: OpenGL is deprecated on macOS and weak in Windows VMs).
+   The **software** renderer draws where no GPU adapter is found. Avoid Skia unless its prebuilt download works
+   (that download would need approval).
 3. Sample store: `zwt-app --sample <dir>` (or `ZWT_DATA_DIR`) seeds a store with `seed_store` from a sample
    `LocalFile` (3 projects, ~10 tasks with subtasks and tags, 2 weeks of segments, one task running) and opens it.
    Without the flag the app refuses to start in M1 (so it can never open real data by accident).
@@ -220,6 +220,13 @@ not when paused, (b) Space on Start/Pause/Resume/Stop does nothing, (c) switchin
 changing data keeps Tags, (d) a timer tick causes no write to the task list or day-axis models; the Windows .exe
 exists and is PE x86-64 (`file` says so); `MEASUREMENTS.md` has a table with numbers or a stated reason per cell.
 
+**Owner rules of 2026-11-04** (M1 fix round, docs/PARITY.md status `2.0 change`): the task list in 1.x's Active /
+Drafts / Stopped groups (restored 2026-11-05), each with the running task on top, then by latest counted time,
+never-run tasks last (row 416); Timeline days from the past to the future with
+page arrows (row 417); an hour sub-grid at the rounding increment (row 418); an empty Timeline keeps its days
+(row 419). Row 420 (the now line moves once a minute while nothing runs) came from the code review and awaits the
+owner's confirmation.
+
 ### Milestone 2: tasks, projects, corrections
 
 Projects (price per hour, currency, fixed fee, budget alerts, archive), tasks and subtasks (forms, drafts, cold
@@ -238,8 +245,19 @@ only Quit pauses** (closes the open segment, marks paused); first-hide notice; s
 focuses the window); heartbeat every ~30 s and crash recovery notice; time away (sleep, clock jump > 2 min, lock,
 idle limit default 10 min) with Keep / Drop / Thinking; reminders (long run, after shift) as notifications;
 Start with Windows (installer: Run key; Store: StartupTask). Crates to evaluate: `tray-icon` + `muda`,
-`single-instance` or a named mutex/socket, `user-idle`, `notify-rust`/Windows toasts. AC: README §Tray behaviour
-and §Time away hold, checked by tests where possible and the manual checklist otherwise.
+`single-instance` or a named mutex/socket, `user-idle`, `notify-rust`/Windows toasts.
+
+**Window frame** (owner decision, 2026-11-04; docs/PARITY.md rows 403-409): no native title bar; the app header is
+the title bar. Minimise, maximise and close are drawn in the header in the Windows 11 style, each with an
+accessible label (close hides to tray, as above). Dragging the header moves the window, with Aero Snap;
+double-clicking it maximises; every edge and corner resizes. Windows 11 Snap Layouts on the maximise button come
+through a small Windows platform module, the one exception to `unsafe_code = "forbid"` that [§8](#8-gates) allows.
+On macOS the traffic lights sit inside the content, in the header. Verified in the owner's Windows test pass (R4).
+
+AC: README §Tray behaviour and §Time away hold, checked by tests where possible and the manual checklist otherwise;
+the window has no native title bar on Windows or macOS, and UI tests find minimise, maximise and close by their
+accessible labels; the owner's Windows test pass confirms drag with Aero Snap, double-click to maximise, resizing
+from every edge and corner, and Snap Layouts on the maximise button; on macOS the traffic lights sit in the header.
 
 ### Milestone 4: Timeline complete, time zones, shifts
 
@@ -257,11 +275,26 @@ the same sample store and selection.
 
 ### Milestone 6: settings, themes, sync, data
 
-Settings, themes (light/dark/system plus the existing palettes), backups and restore, folder sync on OneDrive and
-Google Drive (detection, two folders, versions and restoring), one computer at a time (lease banner, Release now,
-Take over, Pause it from here), first-run setup. AC: a store written by the Tauri app opens in 2.0 and vice versa
-(sample data, both directions); sync between a Tauri device and a Slint device converges (core cloud round-trip
-scenario reproduced with two sample dirs).
+Settings, themes (light/dark/system plus the existing palettes), backups and restore, folder sync on OneDrive,
+Google Drive and the providers below (detection, two folders, versions and restoring), one computer at a time
+(lease banner, Release now, Take over, Pause it from here), first-run setup.
+
+**Sync providers** (owner decision, 2026-11-04; docs/PARITY.md rows 411-415): besides OneDrive and Google Drive,
+detect the desktop folders of **Dropbox, iCloud Drive, Box, pCloud, MEGA, Proton Drive, Nextcloud/ownCloud and
+Sync.com**, listed like the 1.x ones (checkboxes, none on silently) in Settings and in the setup sync step; plus an
+explicit **Other provider** folder choice with an optional typed name that messages use for that folder. A new
+provider is stored so a 1.x device still reads the store (as `Custom` plus a label, or with a serde fallback),
+proved by a round-trip test. Online-only (placeholder) files are detected for every provider and shown with a clear
+notice, never treated as damage. The wording is per provider: status lines and notices name the folder's provider.
+Detection and the provider type live in the core (`detect.rs`, `SyncProvider`), so this is a core change
+([§4](#4-dependency-strategy-for-z-work-core)) in its own commit.
+
+AC: a store written by the Tauri app opens in 2.0 and vice versa (sample data, both directions); sync between a
+Tauri device and a Slint device converges (core cloud round-trip scenario reproduced with two sample dirs); tests
+detect each new provider from its sample folder layout, and an Other provider folder with a typed name shows that
+name in its status line; a round-trip test shows the 1.x core (`a88c1aa`) reads a store holding each new provider
+and an Other provider name, and 2.0 reads that store back after the 1.x core has written it; an online-only
+placeholder file gives the placeholder notice, never a damage warning.
 
 ### Milestone 7: packaging and Store release preparation
 
@@ -309,9 +342,10 @@ test in W/scripts/msix-manifest.test.ts.
 
 1. Re-run the inventory against the 1.x repo (in case it gained features) and update docs/PARITY.md; every
    `2.0 native (1.4.0 design)` row is checked against its design (live-updates spec, subtask-tags plan with
-   Owner answers) and the 1.x code where it exists.
+   Owner answers) and the 1.x code where it exists; every `2.0 addition` row against its milestone text here.
 2. **Every row of docs/PARITY.md is checked against the Tauri app** (side by side, same sample store) and ticked,
-   or carries an owner-approved exception. The 7 `1.x-only` rows each have their 2.0 equivalent (e.g. the
+   or carries an owner-approved exception; a `2.0 addition` row (1.x has nothing to compare) is checked as in
+   item 1 instead. The 7 `1.x-only` rows each have their 2.0 equivalent (e.g. the
    WebView2-missing message becomes a friendly start-up check for what 2.0 needs: a GPU/renderer fallback to the
    software renderer, a damaged or locked store, a missing data folder, with the same "Your data is safe." tone).
 3. **Visual parity** ([§7.2](#72-visual-parity)) passes for every screen and theme.
@@ -330,11 +364,17 @@ it never submits, signs in or publishes itself). Then the site switches to the 2
 
 ### 7.1 Feature parity
 
-The checklist is **[docs/PARITY.md](docs/PARITY.md)**: 402 lines, one per feature or rule, each with its source
-(README/howto line, spec, plan, or commit) and the milestone that delivers it. Status counts at 2026-11-04:
-361 `shipped 1.3.3`, 34 `2.0 native (1.4.0 design)` (sticky Share level, live updates, subtask tags with Select
-all/Deselect all, No tag when empty, unknown-field catch-all, copies reset to Same as task), 7
-`1.x-only, needs a 2.0 equivalent` (WebView2 checks, CSP, snapshot IPC, show-after-first-paint). Also there:
+The checklist is **[docs/PARITY.md](docs/PARITY.md)**: 420 lines, one per feature or rule, each with its source
+(README/howto line, spec, plan, commit, or owner decision) and the milestone that delivers it. Status counts at
+2026-11-05 (each is `grep -c '| <status> |' docs/PARITY.md`): 361 `shipped 1.3.3`, 33 `2.0 native (1.4.0 design)`
+(sticky Share level, live updates, subtask tags with Select all/Deselect all, No tag when empty, unknown-field
+catch-all, copies reset to Same as task), 1 mixed (row 223, `shipped 1.3.3 (subtask part: 2.0 native)`), 7
+`1.x-only, needs a 2.0 equivalent` (WebView2 checks, CSP, snapshot IPC, show-after-first-paint), 13 `2.0 addition`
+(owner decisions of 2026-11-04 beyond 1.x: the drawn window frame, rows 403-409; the period label on Share of time,
+row 410; more sync providers and Other provider, rows 411-415), 5 `2.0 change` (1.x behaviours 2.0 replaces on
+purpose, each row stating the 1.x one: the owner rules of 2026-11-04 for the task-list order, row 416, the Timeline's
+days from the past to the future with page arrows, row 417, the hour sub-grid, row 418, and the empty Timeline,
+row 419; the now line moving while nothing runs, row 420, from the code review, owner to confirm). Also there:
 the verified Store identity, the icon inventory, and what the app deliberately never does (no network calls, no
 telemetry, no Mica, OS theme not followed, ...). Those "never" rules are parity rules too.
 
@@ -361,8 +401,9 @@ Contradictions the inventory found in the 1.x docs (resolve against the code, no
   Generate a Slint `global Theme` from that file's tokens by a script (so they can't drift), including the chart
   tokens (`axis`, `grid`, `shiftBand`, heat ramps, `--c-*` colours). Opaque window, no Mica.
 - **Fonts:** UI `Segoe UI Variable Text` / `Segoe UI Variable Display` for headings and the ticker clock (26 px,
-  weight 650), `Cascadia Mono` for code/changes text, with the same fallbacks as W/src/styles/base.css. On macOS
-  dev builds the fallback is the system font; parity is judged on Windows.
+  weight 650), `Cascadia Mono` for code/changes text, with the same fallbacks as W/src/styles/base.css.
+  **Not bundled** (owner, 2026-11-04): the app uses the fonts installed on the system. On macOS dev builds the
+  fallback is the system font; parity is judged on Windows.
 - **Layout, spacing, radii, wording:** every screen, label, button text, message and notice copied from the React
   components and CSS (W/src/features/**, W/src/components/**), not paraphrased. Keep a strings table
   (`ui/strings.slint` or a Rust table) with a test that diffs it against the 1.x source strings.
@@ -392,8 +433,9 @@ cargo build --release --target x86_64-pc-windows-gnu
   accessible label, simulated clicks and key events, mock time) drives components headlessly in `cargo test`.
   Pin the testing crate to the exact Slint version (it has no stability guarantee).
 - `zwt-bridge` tests are plain Rust: topic bits, no-op recomputes, command handling with a `ManualClock`.
-- Parity tests read `../z-work-tracker/fixtures/*.json` when present (skip with a message when absent; a fresh
-  clone can fetch them from the pinned git rev if needed).
+- Parity fixtures live in this repo: the core's tests read `fixtures/*.json` (copied from 1.x at `a88c1aa`) and
+  never skip. The UI drift tests (theme, strings) read 1.x sources from `$ZWT_1X_DIR`, else `z-work-tracker`, else
+  `reference/z-work-tracker` in an ancestor folder, and skip with a message when none is there.
 - Lints: inherit the core's set (`unsafe_code = "forbid"` except a platform crate that needs it, clippy
   `unwrap_used`, `expect_used`, `panic`, `indexing_slicing` as warn, so `-D warnings` makes them errors).
 
@@ -452,11 +494,11 @@ ones marked ⚑ especially:
 | Metric (Windows VM, one year of sample data) | Target | Note |
 |---|---|---|
 | Cold start to first interactive window | ≤ 0.5 s | from process start to a window that accepts a click |
-| Idle memory (private working set, all processes) | ≤ 60 MB | vs typical WebView2 100–200 MB; ⚑ femtovg/GPU drivers can add tens of MB; the software renderer is the fallback |
+| Idle memory (private working set, all processes) | ≤ 60 MB | vs typical WebView2 100–200 MB; ⚑ femtovg-wgpu/GPU drivers can add hundreds of MB (M3 Mac: phys_footprint 1.21 GB with wgpu, 0.66 GB with OpenGL; docs/DEPENDENCIES.md); the software renderer is the fallback |
 | Input-to-redraw, clicks and typing | ≤ 16 ms | one frame at 60 Hz, p95 |
 | Tab / screen switch | ≤ 50 ms | p95, to the fully drawn screen |
 | Analysis full redraw, one year of data | ≤ 100 ms | ⚑ depends on core analytics cost; measure the core alone first |
-| CPU idle, window visible, no task running | ≈ 0 % (no wakeups) | |
+| CPU idle, window visible, no task running | ≈ 0 %; no wakeups, except one per minute while the Timeline shows today's axis | that wake moves the now line (docs/PARITY.md row 420, pending the owner); 1.x's now line stands still until midnight, so 1.x has none; it also wakes while minimised or hidden (§12) |
 | CPU with a task running, window visible | one wake per second, < 0.5 % | |
 | CPU hidden in the tray, task running | ≈ 0 %, one wake per minute for the tray h:mm | hidden window draws nothing |
 
@@ -506,3 +548,12 @@ Pages and removes it from the old repo (DNS unchanged); (3) the old repo drops i
   owner rather than editing the core.
 - Open: does 2.0 keep the time-zone map? Does Share of time's picked level persist across restarts in 1.x (check
   the prefs model) and should 2.0 match it?
+- Open (owner), from the milestone 1 review: the minute clock that moves the now line (docs/PARITY.md row 420)
+  wakes the app once a minute while the Timeline shows today's axis, also while the window is minimised or hidden,
+  where row 347 says nothing is recomputed. Keep that wake, or stop the clock while the window is not visible? Window
+  visibility is milestone 3.
+- Open, review N2 (tie order in the Share legend): rows with equal seconds are ordered by name
+  (`crates/zwt-ui-logic/src/collate.rs`), and some of these ties differ from 1.x: `æ` and `Æ` (also `œ` and `Œ`)
+  compare equal, `STRASSE` sorts after `Straße`, typographic punctuation sorts after all ASCII punctuation, and some
+  scripts and the dotless `ı` are off; 1.x's `localeCompare()` follows the webview's locale. Fix: secondary weights
+  for `æ`, `œ` and `ß`, or `icu_collator` once the parity target is decided.

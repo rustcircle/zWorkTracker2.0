@@ -1,0 +1,289 @@
+// zWorkTracker 2.0, milestone 1: the shell (1.x src/components/Shell.tsx, src/styles/shell.css) with the task rail,
+// a tab bar with Timeline and About, and the notice of 1.x's toasts (src/components/Toasts.tsx, ui.css `.toast`).
+
+import { Palette } from "std-widgets.slint";
+import { Theme, ThemeTokens, ThemeOption } from "theme.slint";
+import { Strings } from "strings.slint";
+import { AppState, ChipData, ChipPart, Fmt, PieceData, ShareArc, ShareRowData, SubGrid, TagData, TaskRowData } from "state.slint";
+import { FocusRing, Glyph, Icon, KeyActivate, Para, ShadowLarge } from "widgets.slint";
+import { TaskRail } from "rail.slint";
+import { TimelinePanel } from "timeline.slint";
+import { AboutPanel } from "about.slint";
+
+export { Theme, ThemeTokens, ThemeOption, Strings, AppState, Fmt, TaskRowData, TagData, PieceData, ChipData, ChipPart, ShareRowData, ShareArc, SubGrid }
+
+// The logo and name (Shell.tsx `Brand`, shell.css `.brand`).
+component Brand inherits HorizontalLayout {
+    spacing: 8px;
+    alignment: start;
+    VerticalLayout {
+        alignment: center;
+        Icon {
+            glyph: Glyph.clock;
+            color: Theme.accent;
+            width: 22px;
+            height: 22px;
+        }
+    }
+    Text {
+        text: Strings.app-name;
+        font-family: Theme.font-display;
+        font-size: 16px;
+        font-weight: 700;
+        color: Theme.text;
+        vertical-alignment: center;
+        accessible-role: none;
+    }
+}
+
+// The picked tab's bar (shell.css `.tab.on::after`): 3 px of accent, rounded on top.
+component TabUnderline inherits Rectangle {
+    height: 3px;
+    background: Theme.accent;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+
+// A tab of the tab bar (shell.css `.tab`): muted until picked, then a 3 px accent bar under it. The tab is its CSS
+// box: 8 px of padding, a line of 14 px x 1.45 with the label centred in it, 10 px of padding (38.3 px, on whole
+// pixels); the bar is 12 px in from each side and reaches 1 px below the tab, over the tab bar's border
+// (`bottom: -1px`).
+component Tab inherits KeyActivate {
+    in property <string> text;
+    in property <bool> on;
+
+    accessible-role: tab;
+    accessible-label: root.text;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.on;
+
+    min-width: label.preferred-width + 32px;
+    preferred-width: label.preferred-width + 32px;
+    height: 38px;
+
+    Rectangle {
+        background: touch.has-hover && !root.on ? Theme.text.with-alpha(0.07) : transparent;
+        border-top-left-radius: Theme.radius-sm;
+        border-top-right-radius: Theme.radius-sm;
+    }
+    label := Text {
+        y: 8px;
+        height: Theme.font-size-base * 1.45;
+        width: parent.width;
+        text: root.text;
+        color: root.on || touch.has-hover ? Theme.text : Theme.text-muted;
+        font-weight: Theme.font-weight-tab;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    if root.on: TabUnderline {
+        x: 12px;
+        y: parent.height + 1px - self.height;
+        width: parent.width - 24px;
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => {
+            root.activated();
+        }
+    }
+    if root.has-focus && root.keyboard-focus: FocusRing {
+        around-width: root.width;
+        around-height: root.height;
+        radius: Theme.radius-sm;
+    }
+}
+
+// A notice (ui.css `.toast`): bottom right, until dismissed or until its 8 s are up (src/ui.rs, whether or not a task
+// runs). Its shadow is ui.css `--shadow-lg`, under its face.
+component Notice inherits Rectangle {
+    // As tall as its content: placed out of any layout, it would otherwise fill the window.
+    height: layout.preferred-height;
+    accessible-role: text;
+    accessible-label: AppState.notice-text;
+
+    ShadowLarge {
+        width: 100%;
+        height: 100%;
+        radius: Theme.radius;
+    }
+    Rectangle {
+        background: Theme.surface;
+        border-width: 1px;
+        border-color: Theme.border-strong;
+        border-radius: Theme.radius;
+    }
+
+    Rectangle {
+        x: 0;
+        width: 4px;
+        background: Theme.warning;
+        border-top-left-radius: Theme.radius;
+        border-bottom-left-radius: Theme.radius;
+    }
+    layout := HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 10px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        spacing: 10px;
+        VerticalLayout {
+            alignment: start;
+            padding-top: 2px;
+            Icon {
+                glyph: Glyph.warn;
+                color: Theme.warning;
+            }
+        }
+        Para {
+            text: AppState.notice-text;
+            horizontal-stretch: 1;
+        }
+        VerticalLayout {
+            alignment: start;
+            dismiss := Rectangle {
+                width: 30px;
+                height: 30px;
+                border-radius: Theme.radius-sm;
+                background: dismiss-touch.has-hover ? Theme.text.with-alpha(0.07) : transparent;
+                accessible-role: button;
+                accessible-label: Strings.notice-dismiss;
+                accessible-action-default => {
+                    AppState.notice-text = "";
+                    AppState.notice-dismissed();
+                }
+                Icon {
+                    glyph: Glyph.close;
+                    color: dismiss-touch.has-hover ? Theme.text : Theme.text-muted;
+                }
+                dismiss-touch := TouchArea {
+                    mouse-cursor: MouseCursor.pointer;
+                    clicked => {
+                        AppState.notice-text = "";
+                        AppState.notice-dismissed();
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    // 0 Timeline, 1 About.
+    in-out property <int> tab: 0;
+
+    title: Strings.app-name;
+    icon: @image-url("../../../assets/icons/128x128.png");
+    background: Theme.bg;
+    default-font-family: Theme.font-ui;
+    default-font-size: Theme.font-size-base;
+    preferred-width: 1360px;
+    preferred-height: 900px;
+    min-width: 960px;
+    min-height: 600px;
+
+    // The std-widgets (ScrollView, AboutSlint) follow the theme's light or dark scheme.
+    property <bool> dark: Theme.is-dark;
+    init => {
+        Palette.color-scheme = root.dark ? ColorScheme.dark : ColorScheme.light;
+    }
+    changed dark => {
+        Palette.color-scheme = root.dark ? ColorScheme.dark : ColorScheme.light;
+    }
+    // Today's axis is on screen only on the Timeline tab: the now line's minute clock follows it (src/ui.rs).
+    changed tab => {
+        AppState.timeline-shown(root.tab == 0);
+    }
+
+    VerticalLayout {
+        // shell.css `.app-header` (10 px around a 34 px row, then a 1 px line).
+        Rectangle {
+            height: 55px;
+            background: Theme.surface;
+            HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 20px;
+                padding-top: 10px;
+                padding-bottom: 11px;
+                Brand { }
+            }
+            Rectangle {
+                y: parent.height - 1px;
+                height: 1px;
+                background: Theme.border;
+            }
+        }
+
+        HorizontalLayout {
+            TaskRail {
+                width: 420px;
+            }
+            VerticalLayout {
+                // shell.css `.tabbar`: 10 px of padding over the tabs, its 1 px border under them (drawn first, so the
+                // picked tab's bar covers it).
+                Rectangle {
+                    height: 10px + 38px + 1px;
+                    background: Theme.bg;
+                    accessible-role: tab-list;
+                    accessible-label: Strings.nav-sections-label;
+                    Rectangle {
+                        y: parent.height - 1px;
+                        height: 1px;
+                        background: Theme.border;
+                    }
+                    HorizontalLayout {
+                        padding-left: 20px;
+                        padding-top: 10px;
+                        padding-bottom: 1px;
+                        spacing: 4px;
+                        alignment: start;
+                        Tab {
+                            text: Strings.nav-timeline;
+                            on: root.tab == 0;
+                            activated => {
+                                root.tab = 0;
+                            }
+                        }
+                        Tab {
+                            text: Strings.nav-about;
+                            on: root.tab == 1;
+                            activated => {
+                                root.tab = 1;
+                            }
+                        }
+                    }
+                }
+                Rectangle {
+                    accessible-role: tab-panel;
+                    accessible-label: root.tab == 0 ? Strings.nav-timeline : Strings.nav-about;
+                    if root.tab == 0: TimelinePanel { }
+                    if root.tab == 1: AboutPanel { }
+                }
+            }
+        }
+    }
+
+    if AppState.notice-text != "": Notice {
+        x: parent.width - self.width - 20px;
+        y: parent.height - self.height - 20px;
+        width: 440px;
+    }
+}
+
+// Shown on Windows when the app refuses to start or a run fails: a release build has no console, so the message
+// printed to stderr would not be seen. The text is the data-folder guard's own message (zwt-bridge) or the error the
+// run ended with.
+export component RefusalWindow inherits Window {
+    in property <string> message;
+    title: Strings.app-name;
+    background: Theme.bg;
+    default-font-family: Theme.font-ui;
+    default-font-size: Theme.font-size-base;
+    preferred-width: 520px;
+    VerticalLayout {
+        padding: 24px;
+        Para {
+            text: root.message;
+        }
+    }
+}

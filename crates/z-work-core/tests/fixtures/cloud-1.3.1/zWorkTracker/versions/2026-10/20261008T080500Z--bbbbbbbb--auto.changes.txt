@@ -1,0 +1,7 @@
+zWorkTracker version saved 8 Oct 2026, 08:05 UTC
+Saved by Office PC (app 1.3.1). Reason: automatic hourly copy.
+There is no earlier version to compare with, so this gives totals only.
+
+Epoch 0. App schema 2. Data checksum 6035aac4351ae347.
+
+Now: 2 projects, 1 task, 2 time segments.

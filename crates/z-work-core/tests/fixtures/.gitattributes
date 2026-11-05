@@ -1,0 +1,3 @@
+# Byte-exact copies of what the app wrote, compared byte for byte by tests. Windows checkouts run with
+# core.autocrlf=true, which would rewrite the line endings of the .changes.txt files. Nothing here is converted.
+* -text

@@ -1,0 +1,470 @@
+// The task list beside the Timeline, after 1.x src/features/tasks/{TaskRail,TaskCard,LiveTicker}.tsx and
+// src/styles/{shell,tasks}.css.
+
+import { Theme } from "theme.slint";
+import { Strings } from "strings.slint";
+import { AppState, Fmt, TaskRowData } from "state.slint";
+import { Badge, Card, Glyph, LinkButton, Para, ProjectChip, TagChip, TimerButton } from "widgets.slint";
+
+// The running task's clock (LiveTicker.tsx `SessionClock`, tasks.css `.ticker`). The only text that follows the
+// 1 s clock: it is derived from AppState.now-sec here, so no Rust runs per second.
+component LiveTicker inherits Rectangle {
+    in property <string> task-id;
+    in property <int> since;
+    background: Theme.success.mix(Theme.surface, 0.09);
+    border-width: 1px;
+    border-color: Theme.success.mix(Theme.border, 0.40);
+    border-radius: Theme.radius;
+    accessible-role: groupbox;
+    accessible-label: Strings.ticker-label;
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        spacing: 8px;
+        alignment: start;
+
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 15px;
+                height: 15px;
+                border-radius: 7.5px;
+                background: Theme.success.with-alpha(0.25);
+                Rectangle {
+                    width: 9px;
+                    height: 9px;
+                    border-radius: 4.5px;
+                    background: Theme.success;
+                }
+            }
+        }
+        clock := Text {
+            text: Fmt.ticker(AppState.now-sec - root.since);
+            font-family: Theme.font-family-ticker-clock;
+            font-size: Theme.font-size-ticker-clock;
+            font-weight: Theme.font-weight-ticker-clock;
+            letter-spacing: 0.26px;
+            color: Theme.text;
+            vertical-alignment: center;
+            accessible-role: text;
+            accessible-label: self.text;
+            accessible-id: "elapsed:" + root.task-id;
+        }
+        Text {
+            text: Strings.ticker-this-session;
+            color: Theme.text-muted;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// A note under a task (tasks.css `.task-note`: 13 px at the body's line height), boxed for a pause reason
+// (`.task-note-pause`: 6 px and 10 px of padding in a 1 px border: one line is 32.85 px, 33 on whole pixels).
+component Note inherits Rectangle {
+    in property <string> text;
+    in property <bool> boxed;
+    background: root.boxed ? Theme.warning.mix(Theme.surface, 0.12) : transparent;
+    border-width: root.boxed ? 1px : 0;
+    border-color: Theme.warning.mix(Theme.border, 0.50);
+    border-radius: Theme.radius-sm;
+    // Slint draws a border inside the box, CSS outside its padding: the padding here is CSS's plus the border.
+    VerticalLayout {
+        padding-left: root.boxed ? 11px : 0;
+        padding-right: root.boxed ? 11px : 0;
+        padding-top: root.boxed ? 7px : 0;
+        padding-bottom: root.boxed ? 7px : 0;
+        Para {
+            text: root.text;
+            color: root.boxed ? Theme.text : Theme.text-muted;
+            font-size: 13px;
+        }
+    }
+}
+
+// The four timer buttons in a grid of equal columns (tasks.css `.task-actions`), named "Controls for <task>".
+component Controls inherits Rectangle {
+    in property <TaskRowData> task;
+    property <length> cell: (self.width - 3 * 6px) / 4;
+    height: 28px;
+    accessible-role: groupbox;
+    accessible-label: Strings.timer-controls-label.replace-all("{task}", root.task.name);
+
+    TimerButton {
+        x: 0;
+        width: root.cell;
+        height: parent.height;
+        text: Strings.timer-start;
+        glyph: Glyph.play;
+        primary: true;
+        on: root.task.start-on;
+        why: root.task.start-why;
+        activated => {
+            AppState.start-task(root.task.id);
+        }
+    }
+    TimerButton {
+        x: root.cell + 6px;
+        width: root.cell;
+        height: parent.height;
+        text: Strings.timer-pause;
+        glyph: Glyph.pause;
+        on: root.task.pause-on;
+        why: root.task.pause-why;
+        activated => {
+            AppState.pause-task(root.task.id);
+        }
+    }
+    TimerButton {
+        x: 2 * (root.cell + 6px);
+        width: root.cell;
+        height: parent.height;
+        text: Strings.timer-resume;
+        glyph: Glyph.play;
+        primary: true;
+        on: root.task.resume-on;
+        why: root.task.resume-why;
+        activated => {
+            AppState.resume-task(root.task.id);
+        }
+    }
+    TimerButton {
+        x: 3 * (root.cell + 6px);
+        width: root.cell;
+        height: parent.height;
+        text: Strings.timer-stop;
+        glyph: Glyph.stop;
+        on: root.task.stop-on;
+        why: root.task.stop-why;
+        activated => {
+            AppState.stop-task(root.task.id);
+        }
+    }
+}
+
+// One task (TaskCard.tsx, tasks.css `.task`): a card with 10 px corners, its shadow (`--shadow`) under it, a 4 px left
+// edge in the state's colour, name and state badge, project and tags, notes, the live clock while it runs here, and
+// the four timer buttons.
+export component TaskCard inherits Card {
+    in property <TaskRowData> task;
+    property <color> edge: task.state == 1 ? Theme.success : task.state == 2 ? Theme.warning : Theme.border-strong;
+
+    radius: 10px;
+    opacity: task.state == 3 ? 0.92 : 1;
+    accessible-role: groupbox;
+    accessible-label: task.name;
+
+    Rectangle {
+        x: 0;
+        y: 0;
+        width: 4px;
+        height: parent.height;
+        background: root.edge;
+        border-top-left-radius: root.radius;
+        border-bottom-left-radius: root.radius;
+    }
+
+    VerticalLayout {
+        padding-left: 18px;
+        padding-right: 14px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        spacing: 8px;
+
+        HorizontalLayout {
+            spacing: 10px;
+            // tasks.css `.task-name { line-height: 1.3 }`.
+            Para {
+                text: root.task.name;
+                font-family: Theme.font-display;
+                font-size: Theme.font-size-task-name;
+                font-weight: Theme.font-weight-heading;
+                line-height: 1.3;
+                horizontal-stretch: 1;
+            }
+            VerticalLayout {
+                alignment: start;
+                Badge {
+                    text: root.task.state == 1 ? Strings.state-running : root.task.state == 2 ? Strings.state-paused : root.task.state == 3 ? Strings.state-stopped : Strings.state-draft;
+                    tone: root.task.state == 1 ? 4 : root.task.state == 2 ? 2 : 0;
+                }
+            }
+        }
+
+        // tasks.css `.task-meta`: wraps like the 1.x flex row.
+        FlexboxLayout {
+            spacing: 8px;
+            spacing-vertical: 6px;
+            cross-axis-alignment: center;
+            if root.task.has-project: ProjectChip {
+                name: root.task.project-name;
+                tint: root.task.project-color;
+                text-color: root.task.project-text;
+                archived: root.task.project-archived;
+            }
+            if !root.task.has-project: Badge {
+                text: Strings.task-no-project;
+                tone: 3;
+            }
+            if root.task.logged-text != "": Text {
+                text: root.task.logged-text;
+                color: Theme.text-muted;
+                vertical-alignment: center;
+                accessible-role: text;
+                accessible-label: self.text;
+                accessible-id: "elapsed:" + root.task.id;
+            }
+            for tag in root.task.tags: TagChip {
+                name: tag.name;
+                tint: tag.color;
+                text-color: tag.text-color;
+            }
+        }
+
+        if root.task.note != "": Note {
+            text: root.task.note;
+            boxed: root.task.note-is-reason;
+        }
+        if root.task.cold-note != "": Note {
+            text: root.task.cold-note;
+        }
+        if root.task.running-here: LiveTicker {
+            task-id: root.task.id;
+            since: root.task.open-since;
+        }
+
+        Controls {
+            task: root.task;
+        }
+        // TaskCard.tsx: why a draft cannot start.
+        if root.task.state == 0 && root.task.start-why != "": Note {
+            text: root.task.start-why;
+        }
+    }
+}
+
+// One group of the task list (TaskRail.tsx `group`: a section named by its title). Its heading (shell.css
+// `.rail-group-title`): the title and how many cards the group lists ("Active 5"; TaskRail.tsx `{title} <span>
+// {tasks.length}</span>`), in capitals 0.06em apart, 12 px at 600 in the heading font (an h3), muted, 2 px in from each
+// side and 6 px above the cards; one line of 12 px x 1.45 (17.4 px), on whole pixels as a browser paints it, so the
+// cards stay on whole pixels too. Then the cards, 8 px apart (`.task-list`). Under the Stopped group, while it has more
+// tasks than a page, the link that lists them all or the first page again (ui.css `.link`), on a line of the body's
+// line height (14 px x 1.45, on whole pixels) right under the last card, as 1.x's inline button after the list.
+//
+// Every row of the group's layout is a Rectangle of a set height: a card sits in one as tall as the card's own
+// preferred height (plus the gap above it). A layout nested in this one would be sized from its cards' heights at
+// another width (their tags' FlexboxLayout wraps there), taller than the cards it holds, and would push the link down.
+component TaskGroup inherits Rectangle {
+    in property <string> title;
+    in property <[TaskRowData]> tasks;
+    in property <bool> link;
+    in property <string> link-text;
+    callback link-activated();
+
+    accessible-role: groupbox;
+    accessible-label: root.title;
+
+    VerticalLayout {
+        alignment: start;
+        Rectangle {
+            height: heading.height + 6px;
+            heading := Text {
+                x: 2px;
+                y: 0;
+                width: parent.width - 4px;
+                height: Math.round(Theme.font-size-rail-group-title * 1.45 / 1px) * 1px;
+                text: (root.title + " " + root.tasks.length).to-uppercase();
+                font-family: Theme.font-display;
+                font-size: Theme.font-size-rail-group-title;
+                font-weight: Theme.font-weight-rail-group-title;
+                // shell.css `.rail-group-title { letter-spacing: 0.06em }`.
+                letter-spacing: Theme.font-size-rail-group-title * 0.06;
+                color: Theme.text-muted;
+                vertical-alignment: center;
+                accessible-role: text;
+                accessible-label: root.title + " " + root.tasks.length;
+            }
+        }
+        for row[i] in root.tasks: Rectangle {
+            // `.task-list { gap: 8px }`: 8 px above each card but the first.
+            property <length> gap: i == 0 ? 0 : 8px;
+            height: card.preferred-height + self.gap;
+            card := TaskCard {
+                y: parent.gap;
+                width: parent.width;
+                height: self.preferred-height;
+                task: row;
+            }
+        }
+        if root.link: Rectangle {
+            height: Math.round(Theme.font-size-base * 1.45 / 1px) * 1px;
+            HorizontalLayout {
+                alignment: start;
+                LinkButton {
+                    text: root.link-text;
+                    activated => {
+                        root.link-activated();
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The overlay thumb of the rail's scrollbar (owner decision 5): a pill in the theme's border-strong, text-muted while
+// it is held or under the mouse.
+component RailThumb inherits Rectangle {
+    in property <bool> active;
+    width: 6px;
+    border-radius: 3px;
+    background: root.active ? Theme.text-muted : Theme.border-strong;
+}
+
+// The left rail (TaskRail.tsx, shell.css `.rail`): the title, then the tasks in 1.x's groups, Active (running and
+// paused), Drafts, Stopped, 14 px apart (shell.css `.rail-scroll { gap: 14px }`); a group with no task is not drawn,
+// and with no task at all the rail's note shows instead. Each group lists its cards in the order its model holds them:
+// the owner's order inside the group (zwt-bridge `task_rows`: the running task, then by when each last ran, then the
+// ones never run). The Stopped group lists its first page of 8 until its link asks for all (zwt-bridge `StoppedPage`).
+//
+// The rail scrolls in a Flickable with an overlay thumb in the theme's colours instead of the std-widgets
+// ScrollView's bar (owner decision 5): hidden at rest, shown while the rail scrolls or the mouse moves over it, hidden
+// again once both have been still for `thumb-idle`. One timer does the hiding, started by the last wheel or move and
+// stopped by its own shot: while the rail is idle no timer runs.
+export component TaskRail inherits Rectangle {
+    // How long the wheel and the mouse must be still before the thumb hides (about what macOS takes for its
+    // overlay scrollbars).
+    out property <duration> thumb-idle: 1000ms;
+    property <bool> thumb-shown;
+    property <bool> thumb-held;
+    // How far the rail scrolls, and the thumb's run: 2 px clear of the area's top and bottom.
+    property <length> max-scroll: flick.content-height - flick.height;
+    property <length> track: area.height - 4px;
+    property <length> thumb-length: Math.min(root.track, Math.max(24px, root.track * flick.height / Math.max(1px, flick.content-height)));
+
+    background: Theme.bg;
+    accessible-role: groupbox;
+    accessible-label: Strings.rail-title;
+
+    // Shows the thumb and starts the hiding timer over, for the whole `thumb-idle` from now.
+    function wake() {
+        root.thumb-shown = true;
+        hide.running = true;
+        hide.restart();
+    }
+
+    hide := Timer {
+        interval: root.thumb-idle;
+        running: false;
+        triggered => {
+            // One shot: the timer stops itself.
+            self.running = false;
+            root.thumb-shown = false;
+        }
+    }
+
+    // shell.css: border-right on the rail.
+    Rectangle {
+        x: parent.width - 1px;
+        width: 1px;
+        background: Theme.border;
+    }
+
+    VerticalLayout {
+        padding-left: 14px;
+        // shell.css `.rail` pads 14 px, and its `.rail-scroll` reaches 6 px into that (`margin-right: -6px`); 1 px is
+        // the border.
+        padding-right: 9px;
+        padding-top: 14px;
+        spacing: 10px;
+
+        HorizontalLayout {
+            height: 34px;
+            padding-right: 6px;
+            Text {
+                text: Strings.rail-title;
+                font-family: Theme.font-display;
+                font-size: Theme.font-size-rail-title;
+                font-weight: Theme.font-weight-heading;
+                color: Theme.text;
+                vertical-alignment: center;
+            }
+        }
+
+        area := Rectangle {
+            // Sees every pointer event over the rail before the cards do and takes none of them: its mouse-x and
+            // mouse-y follow the pointer, so a move over the rail wakes the thumb.
+            hover := TouchArea {
+                changed mouse-x => {
+                    root.wake();
+                }
+                changed mouse-y => {
+                    root.wake();
+                }
+                flick := Flickable {
+                    // As the std-widgets ScrollView: the mouse scrolls with the wheel, not by dragging the content.
+                    mouse-drag-pan-enabled: false;
+                    flicked => {
+                        root.wake();
+                    }
+                    // shell.css `.rail-scroll { padding: 2px 4px 20px 2px; gap: 14px }`.
+                    VerticalLayout {
+                        padding-left: 2px;
+                        padding-right: 4px;
+                        padding-top: 2px;
+                        padding-bottom: 20px;
+                        spacing: 14px;
+                        alignment: start;
+
+                        if AppState.active-tasks.length + AppState.draft-tasks.length + AppState.stopped-tasks.length == 0: Para {
+                            text: Strings.rail-empty;
+                            color: Theme.text-muted;
+                        }
+                        if AppState.active-tasks.length > 0: TaskGroup {
+                            title: Strings.rail-active;
+                            tasks: AppState.active-tasks;
+                        }
+                        if AppState.draft-tasks.length > 0: TaskGroup {
+                            title: Strings.rail-drafts;
+                            tasks: AppState.draft-tasks;
+                        }
+                        if AppState.stopped-tasks.length > 0: TaskGroup {
+                            title: Strings.rail-stopped;
+                            tasks: AppState.stopped-tasks;
+                            link: AppState.stopped-paged;
+                            link-text: AppState.stopped-all ? Strings.rail-show-fewer : Strings.rail-show-all-stopped.replace-all("{n}", "" + AppState.stopped-total);
+                            link-activated => {
+                                AppState.show-all-stopped(!AppState.stopped-all);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (root.thumb-shown || root.thumb-held) && root.max-scroll > 0: RailThumb {
+                x: area.width - self.width - 1px;
+                y: 2px + (root.track - self.height) * Math.clamp(-flick.content-y / Math.max(1px, root.max-scroll), 0, 1);
+                height: root.thumb-length;
+                active: drag.pressed || drag.has-hover;
+                drag := TouchArea {
+                    pointer-event(event) => {
+                        if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                            root.thumb-held = true;
+                        } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
+                            root.thumb-held = false;
+                            root.wake();
+                        }
+                    }
+                    // The thumb follows the pointer: it moves by how far the pointer has left the point it grabbed.
+                    moved => {
+                        if (self.pressed) {
+                            flick.content-y = -Math.clamp((parent.y - 2px + self.mouse-y - self.pressed-y) / Math.max(1px, root.track - parent.height), 0, 1) * root.max-scroll;
+                            root.wake();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

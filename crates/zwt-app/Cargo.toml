@@ -1,0 +1,54 @@
+[package]
+name = "zwt-app"
+description = "zWorkTracker 2.0, the native desktop app: a Slint UI over z-work-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+# The generated Slint components live in the library so that tests/*.rs can instantiate them.
+[lib]
+name = "zwt_app"
+path = "src/lib.rs"
+
+[[bin]]
+name = "zwt-app"
+path = "src/main.rs"
+
+[dependencies]
+slint.workspace = true
+zwt-bridge.workspace = true
+zwt-ui-logic.workspace = true
+# TaskState of the bridge's rows, and the Clock trait the 1 s clock reads in tests.
+z-work-core.workspace = true
+# The date a day chip names (Command::SelectDay).
+chrono.workspace = true
+# `ZWT_LOG`: wgpu's own warnings and errors on stderr (src/renderer.rs).
+log.workspace = true
+
+# SIGTERM, SIGINT and SIGHUP quit the event loop, so the worker pauses what runs (src/exit.rs).
+[target.'cfg(unix)'.dependencies]
+signal-hook.workspace = true
+
+[build-dependencies]
+slint-build.workspace = true
+
+[dev-dependencies]
+i-slint-backend-testing.workspace = true
+png.workspace = true
+tempfile.workspace = true
+
+# The workspace lints, except `unsafe_code`: deny, not forbid. The Rust that Slint generates expands vtable macros
+# carrying #[allow(unsafe_code)], and an allow under forbid is a hard error (E0453). Deny still rejects any unsafe
+# written in this crate. Keep the rest in step with [workspace.lints] in the root Cargo.toml.
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+indexing_slicing = "warn"

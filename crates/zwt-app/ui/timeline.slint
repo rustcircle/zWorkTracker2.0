@@ -1,0 +1,426 @@
+// The Timeline screen of milestone 1: a day picker, the picked day's axis, and the Share of time card.
+// After 1.x src/features/timeline/{TimelineTab,DayCard,Axis}.tsx and src/styles/timeline.css; the day picker is
+// new in 2.0. The Timeline runs from the past to the future (the owner, 2026-11-04): the picker's days left to right
+// from the oldest to today, as the axis' hours run; 1.x lists every day, newest first.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Strings } from "strings.slint";
+import { AppState, ChipData, Fmt, PieceData, SubGrid } from "state.slint";
+import { Card, FocusRing, Glyph, IconButton, KeyActivate, Lines } from "widgets.slint";
+import { ShareCard } from "share.slint";
+
+// The day chips' type and spacing, shared by the chips and the measure of their labels in DayPicker.
+global DayLabels {
+    out property <length> name-size: 12.5px;
+    out property <int> name-weight: 600;
+    out property <length> date-size: 11.5px;
+    // Between a chip's labels and its sides, and in a compact chip (22.7 px wide in a 960 px window).
+    out property <length> padding: 5px;
+    out property <length> compact-padding: 2px;
+    // Between two chips.
+    out property <length> gap: 6px;
+}
+
+// One day of the picker: its name, its date, and a bar of its closed time by project share. A compact chip (the
+// page's chips are too narrow for their names and dates, DayPicker) writes the weekday's initial over the day's number,
+// today's number in the accent colour, nearer its sides; the name and date it would cut are not drawn, but stay its
+// words for a screen reader, and its accessible name stays the whole date (V2-DP1).
+component DayChip inherits KeyActivate {
+    in property <ChipData> chip;
+    in property <bool> selected;
+    in property <bool> today;
+    in property <bool> compact;
+
+    accessible-role: radio-button;
+    accessible-checkable: true;
+    accessible-checked: root.selected;
+    accessible-label: root.chip.title;
+
+    frame := Rectangle {
+        border-radius: Theme.radius-sm;
+        border-width: root.selected ? 2px : 1px;
+        border-color: root.selected ? Theme.accent : Theme.border-strong;
+        background: root.selected ? Theme.accent.mix(Theme.surface, 0.10) : touch.has-hover ? Theme.text.mix(Theme.surface, 0.06) : Theme.surface;
+    }
+    // The texts of this layout make the chip's size whether it is compact or not: what `compact` changes is only
+    // drawn, so the page's choice (which reads the chips' width) never depends on itself.
+    VerticalLayout {
+        padding-top: 6px;
+        padding-bottom: 7px;
+        padding-left: DayLabels.padding;
+        padding-right: DayLabels.padding;
+        spacing: 2px;
+        name := Text {
+            text: root.today ? Strings.day-picker-today : root.chip.weekday;
+            color: root.compact ? transparent : root.selected ? Theme.accent : Theme.text;
+            font-size: DayLabels.name-size;
+            font-weight: DayLabels.name-weight;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+        date := Text {
+            text: root.chip.short;
+            color: root.compact ? transparent : Theme.text-muted;
+            font-size: DayLabels.date-size;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+        Rectangle {
+            height: 6px;
+            border-radius: 3px;
+            background: Theme.surface-alt;
+            clip: true;
+            // Only on a day with time: an empty HorizontalLayout is at most its padding wide (0 px), and that maximum
+            // would cap the whole chip at the width of its elided labels (the new day after midnight drew as "…").
+            if root.chip.parts.length > 0: HorizontalLayout {
+                width: parent.width;
+                height: parent.height;
+                for part in root.chip.parts: Rectangle {
+                    horizontal-stretch: part.secs;
+                    min-width: 0;
+                    preferred-width: 0;
+                    background: part.color;
+                }
+            }
+        }
+    }
+    // The compact chip's two lines, on the lines of the name and the date: out of the layout (x and y are set).
+    if root.compact: initial := Text {
+        x: DayLabels.compact-padding;
+        y: name.y;
+        width: root.width - 2 * DayLabels.compact-padding;
+        height: name.height;
+        text: root.chip.initial;
+        color: root.selected ? Theme.accent : Theme.text;
+        font-size: DayLabels.name-size;
+        font-weight: DayLabels.name-weight;
+        horizontal-alignment: center;
+        overflow: elide;
+        accessible-role: none;
+    }
+    if root.compact: number := Text {
+        x: DayLabels.compact-padding;
+        y: date.y;
+        width: root.width - 2 * DayLabels.compact-padding;
+        height: date.height;
+        text: root.chip.day;
+        color: root.today ? Theme.accent : Theme.text-muted;
+        font-size: DayLabels.date-size;
+        horizontal-alignment: center;
+        overflow: elide;
+        accessible-role: none;
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => {
+            root.activated();
+        }
+    }
+    if root.has-focus && root.keyboard-focus: FocusRing {
+        around-width: root.width;
+        around-height: root.height;
+        radius: Theme.radius-sm;
+    }
+}
+
+// A page of 14 days, the oldest on the left and, on the page shown first, today on the right (zwt-bridge
+// views::chips). Picking one sends SelectDay; the chip of the day shown is marked. The arrows move the page by a whole
+// page into the past (left) or towards today (right) and leave the day shown as it is; the left one is off when no
+// day with time lies before the page, the right one on the page that ends today (zwt-bridge views::DayPage).
+// The chips share the strip equally, and the strip shrinks with the window (the rail keeps its 420 px): when a chip is
+// narrower than the widest label a chip can write ("Today", the page's weekdays and dates; `labels` below) and its
+// padding, every chip is compact (V2-DP1), so no label is cut and the page reads the same from chip to chip.
+export component DayPicker inherits Card {
+    property <int> count: AppState.chips.length;
+    property <length> chip-width: root.count > 0 ? (strip.width - (root.count - 1) * DayLabels.gap) / root.count : 0;
+    property <bool> compact: root.chip-width < labels.preferred-width + 2 * DayLabels.padding;
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        spacing: 6px;
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Glyph.chevron-left;
+                label: Strings.day-picker-previous;
+                on: AppState.days-older;
+                activated => {
+                    AppState.show-older-days();
+                }
+            }
+        }
+        strip := Rectangle {
+            horizontal-stretch: 1;
+            accessible-role: radio-group;
+            accessible-label: Strings.day-picker-label;
+            HorizontalLayout {
+                spacing: DayLabels.gap;
+                for chip in AppState.chips: DayChip {
+                    horizontal-stretch: 1;
+                    min-width: 0;
+                    preferred-width: 0;
+                    chip: chip;
+                    selected: chip.date == AppState.day-date;
+                    today: chip.date == AppState.today-date;
+                    compact: root.compact;
+                    activated => {
+                        AppState.select-day(chip.date);
+                    }
+                }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Glyph.chevron-right;
+                label: Strings.day-picker-next;
+                on: AppState.days-newer;
+                activated => {
+                    AppState.show-newer-days();
+                }
+            }
+        }
+    }
+    // The labels a chip of the page can write when not compact, never drawn: the layout is as wide as the widest.
+    // "Today" counts on every page (it is wider than any weekday), so paging does not switch the chips between compact
+    // and not. Out of every layout (x and y are set), as Para's probe.
+    Rectangle {
+        x: 0;
+        y: 0;
+        width: 0;
+        height: 0;
+        visible: false;
+        labels := VerticalLayout {
+            Text {
+                text: Strings.day-picker-today;
+                font-size: DayLabels.name-size;
+                font-weight: DayLabels.name-weight;
+                accessible-role: none;
+            }
+            for chip in AppState.chips: Text {
+                text: chip.weekday;
+                font-size: DayLabels.name-size;
+                font-weight: DayLabels.name-weight;
+                accessible-role: none;
+            }
+            for chip in AppState.chips: Text {
+                text: chip.short;
+                font-size: DayLabels.date-size;
+                accessible-role: none;
+            }
+        }
+    }
+}
+
+// One block (Axis.tsx `BlockView`, timeline.css `.block`): work in the project's colour, a billable pause as an
+// outline in it, the running block striped. It runs to now-sec by binding: no model write per second.
+component Block inherits Rectangle {
+    in property <PieceData> piece;
+    in property <int> day-start;
+    in property <int> day-end;
+    in property <length> track-width;
+    property <int> start-at: Math.clamp(root.piece.start, root.day-start, root.day-end);
+    property <int> end-at: Math.clamp(root.piece.open ? AppState.now-sec : root.piece.end, root.day-start, root.day-end);
+    property <float> left: (root.start-at - root.day-start) / Math.max(1, root.day-end - root.day-start);
+    property <float> span: Math.max(0.0025, (root.end-at - root.start-at) / Math.max(1, root.day-end - root.day-start));
+
+    x: root.left * root.track-width;
+    y: root.piece.lane * 28px + 4px;
+    width: Math.max(3px, root.span * root.track-width);
+    height: 24px;
+    border-radius: 4px;
+    clip: true;
+    background: root.piece.outline ? transparent : root.piece.color;
+    border-width: root.piece.outline ? 2px : 1px;
+    border-color: root.piece.outline ? root.piece.color : Theme.text.with-alpha(0.28);
+    accessible-role: image;
+    accessible-label: root.piece.label;
+
+    if root.piece.outline: Lines {
+        width: parent.width;
+        height: parent.height;
+        lines: AppState.pause-lines;
+        color: Theme.text.with-alpha(0.24);
+        thickness: 3px;
+    }
+    if root.piece.open && !root.piece.outline: Lines {
+        width: parent.width;
+        height: parent.height;
+        lines: AppState.live-lines;
+        color: Theme.bg.with-alpha(0.28);
+        thickness: 6px;
+    }
+    if root.span > 0.07: Text {
+        x: 6px;
+        width: parent.width - 12px;
+        text: root.piece.label;
+        color: root.piece.outline ? Theme.text : root.piece.text-color;
+        font-size: Theme.font-size-block-text;
+        font-weight: Theme.font-weight-block-text;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+}
+
+// An hour line of the day axis (timeline.css `.grid-line`): the grid colour at 55 %, every third hour at full
+// strength (`.major`).
+component HourLine inherits Rectangle {
+    in property <bool> major;
+    y: 0;
+    width: 1px;
+    background: root.major ? Theme.grid : Theme.grid.with-alpha(0.55);
+}
+
+// A line of the sub-grid between the hour lines (2.0, owner 2026-11-04): the grid colour at 25 %, fainter than any
+// hour line.
+component SubLine inherits Rectangle {
+    y: 0;
+    width: 1px;
+    background: Theme.grid.with-alpha(0.25);
+}
+
+// The day's axis (Axis.tsx, timeline.css `.axis`): the day's real length, hour lines (every third one stronger), the
+// sub-grid between them, blocks in their lanes, the now line on today, and every third hour labelled below. The grid
+// follows the day, its increment and the track's width only: no clock moves it. An axis with no block draws the same.
+export component DayAxis inherits VerticalLayout {
+    property <int> length: Math.max(1, AppState.day-end - AppState.day-start);
+    property <int> hours: Math.max(1, Math.round(self.length / 3600));
+    // The now line's time: the running clock's second while a task runs here (the running block ends there too),
+    // else the minute clock's (src/clock.rs), so the line follows the time when nothing runs (review R2).
+    property <int> now: AppState.running-id != "" ? AppState.now-sec : AppState.now-min;
+    // Pixels a minute along the track. Slint lays the window out again whenever a text in a layout changes, so each
+    // second while a task runs (its elapsed time in the rail), and works this out again then; the sub-grid follows its
+    // value only, through `changed` below, so a tick neither asks for it nor makes its lines anew.
+    property <float> minute-px: inner.width / 1px * 60 / root.length;
+    property <int> increment: AppState.day-increment;
+    // The sub-grid: in each hour, `per-hour` lines every `step` minutes from it (the day's increment, or a multiple of
+    // it while the increment's lines would be closer than 3 px; src/ui.rs, zwt-ui-logic day::sub_grid). None until the
+    // worker names the increment.
+    property <SubGrid> sub;
+    // Its lines: in the whole hours, then in a last part of an hour (a zone whose clocks move by 30 minutes).
+    property <int> part-hour: Math.mod(root.length, 3600);
+    property <int> part-lines: root.part-hour > 0 && root.sub.step > 0
+        ? Math.min(root.sub.per-hour, Math.floor((root.part-hour - 1) / (root.sub.step * 60)))
+        : 0;
+    property <int> sub-lines: Math.floor(root.length / 3600) * root.sub.per-hour + root.part-lines;
+    spacing: 3px;
+
+    function ask-sub-grid() {
+        root.sub = root.increment > 0 && root.minute-px > 0
+            ? AppState.sub-grid(root.increment, root.minute-px)
+            : { step: 0, per-hour: 0 };
+    }
+    init => {
+        root.ask-sub-grid();
+    }
+    // A new width, day length or increment: Slint runs `changed` handlers before it draws the next frame. A new width or
+    // length is drawn, so it asks for that frame itself; nothing drawn reads the increment, so src/ui.rs asks for one.
+    changed minute-px => {
+        root.ask-sub-grid();
+    }
+    changed increment => {
+        root.ask-sub-grid();
+    }
+
+    track := Rectangle {
+        height: Math.max(1, AppState.day-lanes) * 28px + 8px;
+        background: Theme.surface;
+        border-width: 1px;
+        border-color: Theme.border-strong;
+        border-radius: 6px;
+
+        inner := Rectangle {
+            x: 1px;
+            y: 1px;
+            width: parent.width - 2px;
+            height: parent.height - 2px;
+            // Line i: in hour i / per-hour, (i mod per-hour + 1) steps into it.
+            for i in root.sub-lines: SubLine {
+                property <int> at: Math.floor(i / root.sub.per-hour) * 3600
+                    + (Math.mod(i, root.sub.per-hour) + 1) * root.sub.step * 60;
+                x: self.at / root.length * parent.width;
+                height: parent.height;
+            }
+            for h in root.hours - 1: HourLine {
+                x: (h + 1) * 3600 / root.length * parent.width;
+                height: parent.height;
+                major: Math.mod(h + 1, 3) == 0;
+            }
+            for piece in AppState.pieces: Block {
+                piece: piece;
+                day-start: AppState.day-start;
+                day-end: AppState.day-end;
+                track-width: inner.width;
+            }
+            // From the day's first second: the minute clock writes 00:00:00 itself, which a strict test would hide for
+            // a minute.
+            if AppState.day-date == AppState.today-date && root.now >= AppState.day-start && root.now < AppState.day-end: Rectangle {
+                x: (root.now - AppState.day-start) / root.length * parent.width - 1px;
+                y: 0;
+                width: 2px;
+                height: parent.height;
+                background: Theme.danger;
+                accessible-role: image;
+                accessible-label: Strings.axis-now;
+            }
+        }
+    }
+    Rectangle {
+        height: 20px;
+        for k in Math.floor((root.hours - 1) / 3) + 1: Text {
+            property <int> hour: k * 3;
+            x: self.hour * 3600 / root.length * parent.width - self.width / 2;
+            y: 0;
+            text: Strings.axis-hour.replace-all("{hh}", Fmt.pad2(Math.mod(self.hour, 24)));
+            color: Theme.axis;
+            font-size: Theme.font-size-axis-label;
+        }
+    }
+}
+
+// The picked day (DayCard.tsx, timeline.css `.day`): its name, then its axis.
+export component DayCard inherits Card {
+    accessible-role: groupbox;
+    accessible-label: AppState.day-label;
+    VerticalLayout {
+        padding-left: 18px;
+        padding-right: 18px;
+        padding-top: 14px;
+        padding-bottom: 8px;
+        spacing: 10px;
+        Text {
+            text: AppState.day-label;
+            font-family: Theme.font-display;
+            font-size: Theme.font-size-day-title;
+            font-weight: Theme.font-weight-heading;
+            color: Theme.text;
+        }
+        HorizontalLayout {
+            padding-left: 22px;
+            padding-right: 22px;
+            padding-top: 4px;
+            DayAxis { }
+        }
+    }
+}
+
+// The Timeline tab (timeline.css `.timeline`).
+export component TimelinePanel inherits ScrollView {
+    VerticalLayout {
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-top: 18px;
+        padding-bottom: 40px;
+        spacing: 16px;
+        alignment: start;
+        DayPicker { }
+        DayCard { }
+        ShareCard {
+            // The panel's padding: 24 px each side.
+            room: root.visible-width - 48px;
+        }
+    }
+}

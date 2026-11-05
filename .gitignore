@@ -46,3 +46,6 @@ desktop.ini
 *.swp
 *.swo
 *~
+
+# Read-only reference copy of the 1.x repo (z-work-tracker) and its built artefacts; never committed
+/reference/

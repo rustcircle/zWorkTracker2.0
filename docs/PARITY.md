@@ -7,18 +7,26 @@ the Tauri app. **2.0 (Slint) is the first version on the Microsoft Store** (owne
 goes to the Store and Tauri 1.4.0 is not finished. Rows marked `2.0 native (1.4.0 design)` are features designed for 1.4.0 (subtask
 tags from the 1.4.0 plan with the owner's answers, the reactive live-updates design, the sticky Share of time
 level) that **2.0 builds natively** from those designs; the parity check for them is against the design (and the
-1.x code where it exists), not against a released Tauri build.
+1.x code where it exists), not against a released Tauri build. Rows marked `2.0 addition` are features 1.x never
+had, decided by the owner for 2.0 on 2026-11-04 (the drawn window frame, the period label on Share of time, more
+sync providers); they are checked against the row and its PLAN.md milestone text. Rows marked `2.0 change` are 1.x
+behaviours that 2.0 deliberately replaces by an owner rule (the task-list order, the Timeline's days from the past to
+the future, the hour sub-grid, the empty Timeline; owner rules of 2026-11-04); each states the 1.x behaviour it
+replaces, and an older row that describes that 1.x behaviour points to it with "(2.0: see row N)".
 
 Inventory built read-only on 2026-11-04 from the sources below; re-run it against the 1.x repo before the gate in case it gained features.
 
 Read-only inventory, 2026-11-04. W = `/Users/p/Z/ZCode/z-work-tracker/.claude/worktrees/task-deletion-timeline-ad2298` (branch `claude/task-deletion-timeline-ad2298`, HEAD `fd51d79`; `main` = `0154df5` "Merge release 1.3.3 into main").
 
-Source keys: **R** = W/README.md (working tree; line numbers are of that file), **H** = W/site/howto.html, **S** = W/STORE_LISTING_NOTICE.md, also in this repo as [STORE_LISTING_NOTICE.md](STORE_LISTING_NOTICE.md) (its S line numbers + 5, for the note at the top), **LU** = [from-1.4.0/live-updates-spec.md](from-1.4.0/live-updates-spec.md), **P** = [from-1.4.0/subtask-tags-plan.md](from-1.4.0/subtask-tags-plan.md), **P/OA** = P "Owner answers", commit shas from `git -C W log`.
+Source keys: **R** = W/README.md (working tree; line numbers are of that file), **H** = W/site/howto.html, **S** = W/STORE_LISTING_NOTICE.md, also in this repo as [STORE_LISTING_NOTICE.md](STORE_LISTING_NOTICE.md) (its S line numbers + 5, for the note at the top), **LU** = [from-1.4.0/live-updates-spec.md](from-1.4.0/live-updates-spec.md), **P** = [from-1.4.0/subtask-tags-plan.md](from-1.4.0/subtask-tags-plan.md), **P/OA** = P "Owner answers", **O** = owner decision of 2026-11-04 (written into PLAN.md milestones 1, 3 and 6 and [visual/REVIEW.md](visual/REVIEW.md) "Owner decisions (2026-11-04)"), **1.x** `<file>` L*n* = that file in the 1.x repo at `a88c1aa` (PLAN.md §2: `reference/z-work-tracker`, under `src/`), commit shas from `git -C W log`.
 
 Status rules:
 - `shipped 1.3.3`: in docs and code reachable from `main` (0154df5).
 - `2.0 native (1.4.0 design)` (was "1.4.0, follow as merged" in the inventory): only in `main..HEAD` (fd51d79), in uncommitted working-tree changes of W (the 30 s refresh text in R/H and edits to store.tsx, stepClock.ts, analysisClock.ts, TimelineTab.tsx and others), or only in LU / P. Build the final design (LU Change 2/3, P with Owner answers), not the uncommitted 30 s refresh draft in R/H.
 - `1.x-only, needs a 2.0 equivalent`: tied to Tauri/WebView2/web stack; keep the idea, not the mechanism.
+- `2.0 addition`: not in 1.x at all; an owner decision (source **O**) adds it to 2.0. Nothing to compare with the Tauri app: the parity gate checks it against the row and its PLAN.md milestone text.
+- `2.0 change`: a 1.x behaviour that 2.0 deliberately replaces by an owner rule (source **O**); the row states the 1.x behaviour after "1.x:". The parity gate checks the 2.0 behaviour against the row and confirms the 1.x behaviour it names in the Tauri app. The older row that describes the 1.x behaviour keeps its number and status and says "(2.0: see row N)".
+- Row 223 is mixed: `shipped 1.3.3 (subtask part: 2.0 native)`.
 
 ## Setup & first run
 
@@ -97,7 +105,7 @@ Status rules:
 | 61 | After delete: selection, open editors (unsaved words dropped silently) and Analysis filter forget the task | R L187; 0c77fdd | shipped 1.3.3 | 2 | [ ] |
 | 62 | Delete goes in the audit trail; records stay in the data file (a pre-delete backup restores until sync re-merges the delete) | R L187 | shipped 1.3.3 | 2 | [ ] |
 | 63 | Deletion marker beats every edit from every PC; time arriving later is hidden too | R L441 | shipped 1.3.3 | 2 | [ ] |
-| 64 | Task-list item in description can be made active ("Make active", saved items only); exactly one active | R L327; H L147 | shipped 1.3.3 | 2 | [ ] |
+| 64 | Task-list item in description can be made active ("Make active", saved items only); only one subtask is active at a time (making another active replaces it; owner confirmed 2026-11-04) | R L327; H L147; O | shipped 1.3.3 | 2 | [ ] |
 | 65 | Each segment belongs to the subtask active when it started; switching while running closes and opens a segment | R L327 | shipped 1.3.3 | 2 | [ ] |
 | 66 | Each subtask shows its own time on the task card | H L147 | shipped 1.3.3 | 2 | [ ] |
 | 67 | Removing the active item from the description clears the active subtask | R L327 | shipped 1.3.3 | 2 | [ ] |
@@ -114,6 +122,7 @@ Status rules:
 | 78 | Overrides retroactive to all the subtask's logged time | P Semantics | 2.0 native (1.4.0 design) | 2 | [ ] |
 | 79 | Stored as overrides only, per entry stamped; reset = entry with tags null + stamp; skipped when empty (file byte-identical to 1.3.x) | P Semantics | 2.0 native (1.4.0 design) | 2 | [ ] |
 | 80 | Copies and templates start at "Same as task" (overrides not carried) | P Semantics; P/OA Q5 | 2.0 native (1.4.0 design) | 2 | [ ] |
+| 416 | Task list groups and order (owner rules, 2026-11-04 and 2026-11-05: "activities/tasks is just the same, the running on top"): 1.x's groups as 1.x draws them, Active (running and paused), Drafts, Stopped, each under its heading (the title and how many cards it lists, in capitals: "ACTIVE 5"), a group with no task not drawn, the Stopped group 8 at a time with "Show all N stopped tasks", then every one with "Show fewer" (the heading counts the cards listed, as 1.x); inside each group: the task running on this computer first; then every task that has run, by the end of its latest segment as it counts (a correction's end; voided segments left out; a task running on another computer counts as running now), most recent first; then the tasks that never ran (no counted segment; a draft with time added by hand has run, and stays under Drafts), newest created first; ties by creation time, newest first, then by id. 1.x orders Active running first, then paused, each by latest activity (another computer's running task by its last heartbeat), Drafts newest created first, Stopped by latest activity (a task with no time by its creation time among them), ties in the snapshot's order. The 2026-11-04 rule had one list without the groups; the groups came back on 2026-11-05 | O; 1.x TaskRail.tsx L15, L36-41, L80-84, L87-102, L135-145 | 2.0 change | 1 | [ ] |
 
 ## Timer
 
@@ -155,6 +164,13 @@ Status rules:
 | 109 | Quit syncs once and releases the lease | R L90, L111 | shipped 1.3.3 | 3 | [ ] |
 | 110 | Read-only PC: tray Resume shows toast "A is using zWorkTracker, so this computer is read-only. Take over from the banner to work here.", raises window, starts nothing | R L1010 | shipped 1.3.3 | 3 | [ ] |
 | 111 | Tray elapsed stays current while window hidden | LU r3 | 2.0 native (1.4.0 design) | 3 | [ ] |
+| 403 | No native title bar: the app header is the title bar on Windows and macOS; the Windows rows 403-408 are verified in the owner's Windows test pass | O; PLAN.md M3 | 2.0 addition | 3 | [ ] |
+| 404 | Minimise, maximise (restore when maximised) and close drawn in the app header in the Windows 11 style, each with an accessible label; close hides to tray as in row 94 | O; PLAN.md M3 | 2.0 addition | 3 | [ ] |
+| 405 | Dragging the header (outside its controls) moves the window, with Aero Snap | O; PLAN.md M3 | 2.0 addition | 3 | [ ] |
+| 406 | Double-click on the header maximises the window, as a native title bar does | O; PLAN.md M3 | 2.0 addition | 3 | [ ] |
+| 407 | Every window edge and corner resizes the window | O; PLAN.md M3 | 2.0 addition | 3 | [ ] |
+| 408 | Windows 11 Snap Layouts on the maximise button, through a small Windows platform module: the one exception to `unsafe_code = "forbid"` (PLAN.md §8 lints) | O; PLAN.md M3 | 2.0 addition | 3 | [ ] |
+| 409 | macOS: the traffic-light buttons sit inside the content, in the app header | O; PLAN.md M3 | 2.0 addition | 3 | [ ] |
 
 ## Time away & reminders
 
@@ -177,7 +193,7 @@ Status rules:
 
 | # | Feature / rule | Source | Status | M | Checked |
 |---|---|---|---|---|---|
-| 124 | Main screen: period total, then days newest first | R L240 | shipped 1.3.3 | 1, 4 | [ ] |
+| 124 | Main screen: period total, then days newest first (2.0: see row 417) | R L240 | shipped 1.3.3 | 1, 4 | [ ] |
 | 125 | Day axis of the day's real length with blocks in project colours | R L240 | shipped 1.3.3 | 1, 4 | [ ] |
 | 126 | Entries grouped into Night 00-06, Morning 06-12, Afternoon 12-18, Evening 18-24 | R L240 | shipped 1.3.3 | 1, 4 | [ ] |
 | 127 | Segment crossing midnight split across days and bands | R L240 | shipped 1.3.3 | 1, 4 | [ ] |
@@ -195,6 +211,10 @@ Status rules:
 | 139 | Filter shows match count and clear button; forgotten on quit | R L250 | shipped 1.3.3 | 1, 4 | [ ] |
 | 140 | Shift bands as backgrounds; DST markers on axis | R L295, L284 | shipped 1.3.3 | 1, 4 | [ ] |
 | 141 | Show both: second axis in client zone | R L276 | shipped 1.3.3 | 1, 4 | [ ] |
+| 417 | Timeline days run from the past to the future (owner rule, 2026-11-04; replaces the order of row 124): the day picker shows a page of 14 days, the oldest on the left and, on the page shown first, today on the right; a day's blocks sit on its axis by time, the earliest on the left. Left and right arrows ("Previous days", "Next days") move the picker by a whole page (14 days) into the past or towards today and leave the day shown as it is; the left arrow is off (dimmed, not clickable) when no day before the page has time, the right one on the page that ends today (no future days). 1.x: one list of days, newest first, of logged days only (and today while a task runs), 14 shown, then "Show older (N more days)" adds 14 more below, with no limit | O; 1.x TimelineTab.tsx L20, L48, L97-98, L169; model.ts L240-244; R L240 | 2.0 change | 1 | [ ] |
+| 418 | Day axis sub-grid (owner rule, 2026-11-04: "a sub grid in the timeline of hours that splits time in the increments choosen"): between the hour lines (as 1.x: the grid colour at 55 %, every third hour at full strength) a fainter line (the grid colour at 25 %) at each multiple of the increment into each hour, e.g. :15, :30 and :45 for 15 minutes; the increment is the global rounding increment in force on the day shown (Settings > Rounding, rows 183, 184 and 190; a project's own rule does not change the axis), 15 minutes when none is saved or rounding is Off; 60 minutes or more draws the hour lines only. Lines never closer than 3 px: a small increment marks the least multiple of it that keeps them apart and still splits the hour (1 or 5 minutes on a 1360 px window: every 6 or 10 minutes); one that does not split the hour marks its multiples into each hour (45: :45; 25: :25 and :50) and leaves out a last line closer than 3 px to the next hour. Drawn from the day, its increment and the axis width only: no clock tick moves it. 1.x: hour lines only, every third stronger, no sub-grid | O; 1.x Axis.tsx L128-130, axisGeometry.ts L44, timeline.css L37-39; RoundingFields.tsx L6; RoundingSection.tsx L18 | 2.0 change | 1 | [ ] |
+| 419 | Empty Timeline (owner rule, 2026-11-04: "when there's no tasks the timeline should display the days the same just empty"): with no task, or with tasks but no time on the page shown, the Timeline shows the same day picker page (14 days ending today; the right arrow off on the page that ends today, the left one off unless a day before the page has time, as with data), the same day card and axis with its hour labels, hour lines and sub-grid (row 418), and the Share of time card with its own empty note; only the blocks are missing, and no placeholder stands in for the days. 1.x lists logged days only (and today while a task runs), so an empty store shows "Nothing is logged yet. Create a task, press Start, and its time appears here as a block on today's axis." and no day at all | O; 1.x TimelineTab.tsx L97-98, L140; model.ts L240-244 | 2.0 change | 1 | [ ] |
+| 420 | The now line on today's axis follows the time while nothing runs: it moves once a minute, on the wall-clock minute, while the Timeline shows today's axis, and starts each new day (also after sleep). It runs also while the window is minimised or hidden, one wake a minute (row 347; window visibility is milestone 3; owner question in PLAN §12). From the M1 code review (R2), not an owner rule: owner to confirm. 1.x: while nothing runs the now line stands still until midnight, a data change or waking | M1 code review R2 (2026-11-04); 1.x TimelineTab.tsx L66-74 | 2.0 change | 1 | [ ] |
 
 ## Corrections & manual entries
 
@@ -307,6 +327,7 @@ Status rules:
 | 221 | Share of time Tags, tag filter, tag metrics and Excel Analytics count subtask time under its effective tags (per piece of time) | P Done-when 3, Semantics | 2.0 native (1.4.0 design) | 5 | [ ] |
 | 222 | Excel tags sheet stays overlapping, one row per tag, counting segments | P Semantics | 2.0 native (1.4.0 design) | 5 | [ ] |
 | 223 | Rust and TS analysis held equal by parity fixtures (analytics-parity.json; subtask-tags-parity.json) | R L407; P | shipped 1.3.3 (subtask part: 2.0 native) | 5 | [ ] |
+| 410 | Share of time card shows the period it covers (e.g. "2 Nov - 8 Nov 2026", muted) next to the title "Share of time", from the core's period label; 1.x has no such label (it shows the period in the Analysis controls) | O; visual/REVIEW.md V-SP2 | 2.0 addition | 1 | [ ] |
 
 ## Billing, earnings, exports
 
@@ -444,6 +465,11 @@ Status rules:
 | 338 | Sync file format unchanged since 1.3.1 (byte-for-byte round-trip tests); keep SCHEMA_VERSION 2 | 3777188; P Repo facts | shipped 1.3.3 | 6 | [ ] |
 | 339 | Catch-all for unknown fields on Task and Segment, so a newer version's fields survive | P/OA Q2 | 2.0 native (1.4.0 design) | 6 | [ ] |
 | 340 | Subtask-tag overrides survive a round trip through a 1.3.3 device (stamp rule) | P Done-when 2, C1 | 2.0 native (1.4.0 design) | 6 | [ ] |
+| 411 | Besides OneDrive and Google Drive, detect the desktop folders of Dropbox, iCloud Drive, Box, pCloud, MEGA, Proton Drive, Nextcloud/ownCloud and Sync.com; listed with checkboxes in Settings and the setup sync step as in rows 6 and 299, none on silently | O; PLAN.md M6 | 2.0 addition | 6 | [ ] |
+| 412 | Explicit "Other provider" folder choice with an optional typed name that messages use for that folder; with no name they use the folder's name, as 1.x does for a chosen folder | O; core service.rs `folder_label` | 2.0 addition | 6 | [ ] |
+| 413 | New providers (and a typed name) stored so 1.x still reads the store: as `Custom` plus a label, or with a serde fallback; a round-trip test through the 1.x core proves it, including a 1.x write (1.x skips a field it doesn't know and its next write leaves it out) | O; core model.rs `SyncProvider`, `LocalPrefs` | 2.0 addition | 6 | [ ] |
+| 414 | Online-only (placeholder) files detected for every provider and shown with a clear notice; still retried, never treated as damage (row 309, for all providers) | O; PLAN.md M6 | 2.0 addition | 6 | [ ] |
+| 415 | Wording per provider: status lines, notices and hints name the folder's provider, e.g. "Written to Dropbox folder, 2 min ago" (as row 302 does for OneDrive) | O; PLAN.md M6 | 2.0 addition | 6 | [ ] |
 
 ## Live updates/reactivity
 
@@ -455,7 +481,7 @@ Status rules:
 | 344 | Final rule: no polling; all views derive reactively from one store plus a shared 1 s running-time signal (active only while a task runs) | LU Change 2 | 2.0 native (1.4.0 design) | 1 | [ ] |
 | 345 | Views re-render only when their output changes (minute-level figures once a minute) | LU Change 2 | 2.0 native (1.4.0 design) | 1 | [ ] |
 | 346 | Covered views: Analysis (all charts incl. Share of time centre, cards, insights, comparison, View data), Timeline totals/axes/headers/earnings, Billing unbilled, budget 80/100% warnings, task cards and subtask times | LU r2 | 2.0 native (1.4.0 design) | 1 | [ ] |
-| 347 | Hidden/minimised: no recomputation; on show everything catches up at once; timing never stops | LU r3; R L244 | 2.0 native (1.4.0 design) | 1 | [ ] |
+| 347 | Hidden/minimised: no recomputation; on show everything catches up at once; timing never stops (2.0, milestone 1: the minute clock of row 420 still wakes the app once a minute while hidden or minimised; owner question in PLAN §12) | LU r3; R L244 | 2.0 native (1.4.0 design) | 1 | [ ] |
 | 348 | User events (start/pause/resume/stop, corrections, added time, tag/subtask changes) and sync changes show immediately everywhere; event recorded first, then shown | LU r4, r7, r8 | 2.0 native (1.4.0 design) | 1 | [ ] |
 | 349 | A refresh never resets chart level, filters, selection, scroll, open View data tables or form input; created summaries stay frozen | LU r5; R L244 | 2.0 native (1.4.0 design) | 1 | [ ] |
 | 350 | No view holds a mount-time snapshot | LU r9 | 2.0 native (1.4.0 design) | 1 | [ ] |

@@ -1,0 +1,453 @@
+{
+  "comment": "Checked by both Rust and Vitest. Every expected figure is worked out by hand in the note.",
+  "cases": [
+    {
+      "name": "default 15 min up, 1 minute bills 15",
+      "note": "60 s up to 900 s. 900 s at 6000 c/h = 1500 c.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:01:00Z"]],
+      "rows": [{ "day": "2026-02-02", "exact": 60, "billable": 900, "amounts": { "EUR": 1500 }, "exactAmounts": { "EUR": 100 } }]
+    },
+    {
+      "name": "exact multiple stays, one second over steps up",
+      "note": "900 stays 900 (1500 c). 901 becomes 1800 (3000 c).",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "USD" }],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:15:00Z"], ["2026-02-03T09:00:00Z", "2026-02-03T09:15:01Z"]],
+      "rows": [
+        { "day": "2026-02-02", "exact": 900, "billable": 900, "amounts": { "USD": 1500 }, "exactAmounts": { "USD": 1500 } },
+        { "day": "2026-02-03", "exact": 901, "billable": 1800, "amounts": { "USD": 3000 }, "exactAmounts": { "USD": 1502 } }
+      ]
+    },
+    {
+      "name": "rate change mid segment, exact time",
+      "note": "30 min at 6000 c/h = 3000 c, 30 min at 12000 c/h = 6000 c.",
+      "zone": "UTC",
+      "rounding": [{ "from": "2000-01-01", "minutes": 0, "method": "nearest" }],
+      "rates": [
+        { "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" },
+        { "from": "2026-02-02T10:00:00Z", "cents": 12000, "currency": "EUR" }
+      ],
+      "segments": [["2026-02-02T09:30:00Z", "2026-02-02T10:30:00Z"]],
+      "rows": [{ "day": "2026-02-02", "exact": 3600, "billable": 3600, "amounts": { "EUR": 9000 }, "exactAmounts": { "EUR": 9000 } }]
+    },
+    {
+      "name": "rounding difference goes to the last rate",
+      "note": "10 min old rate, 10 min new rate: 20 min up to 30. New bucket gets the extra 10: 20 min at 12000 = 4000, plus 10 min at 6000 = 1000.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [
+        { "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" },
+        { "from": "2026-02-02T10:00:00Z", "cents": 12000, "currency": "EUR" }
+      ],
+      "segments": [["2026-02-02T09:50:00Z", "2026-02-02T10:10:00Z"]],
+      "rows": [{ "day": "2026-02-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 5000 }, "exactAmounts": { "EUR": 3000 } }]
+    },
+    {
+      "name": "zero and blank rates and two currencies stay apart",
+      "note": "Before any rate: no amount. Zero rate: 0 EUR. 5000 USD. Blank again: no amount.",
+      "zone": "UTC",
+      "rounding": [{ "from": "2000-01-01", "minutes": 0, "method": "nearest" }],
+      "rates": [
+        { "from": "2026-02-02T00:00:00Z", "cents": 0, "currency": "EUR" },
+        { "from": "2026-02-03T00:00:00Z", "cents": 5000, "currency": "USD" },
+        { "from": "2026-02-04T00:00:00Z", "cents": null, "currency": "USD" }
+      ],
+      "segments": [
+        ["2026-02-01T10:00:00Z", "2026-02-01T11:00:00Z"], ["2026-02-02T10:00:00Z", "2026-02-02T11:00:00Z"],
+        ["2026-02-03T10:00:00Z", "2026-02-03T11:00:00Z"], ["2026-02-04T10:00:00Z", "2026-02-04T11:00:00Z"]
+      ],
+      "rows": [
+        { "day": "2026-02-01", "exact": 3600, "billable": 3600, "amounts": {}, "exactAmounts": {} },
+        { "day": "2026-02-02", "exact": 3600, "billable": 3600, "amounts": { "EUR": 0 }, "exactAmounts": { "EUR": 0 } },
+        { "day": "2026-02-03", "exact": 3600, "billable": 3600, "amounts": { "USD": 5000 }, "exactAmounts": { "USD": 5000 } },
+        { "day": "2026-02-04", "exact": 3600, "billable": 3600, "amounts": {}, "exactAmounts": {} }
+      ]
+    },
+    {
+      "name": "half cent rounds up at the total",
+      "note": "18 s at 100 c/h = 0.5 c, rounds to 1.",
+      "zone": "UTC",
+      "rounding": [{ "from": "2000-01-01", "minutes": 0, "method": "up" }],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 100, "currency": "USD" }],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:00:18Z"]],
+      "rows": [{ "day": "2026-02-02", "exact": 18, "billable": 18, "amounts": { "USD": 1 }, "exactAmounts": { "USD": 1 } }]
+    },
+    {
+      "name": "same work rounds differently per zone",
+      "note": "UTC: one 20 min row, up to 30 (with 15 up). New York: midnight at 05:00Z splits it into two 10 min rows, each up to 15. Exact totals agree at 1200.",
+      "zone": "America/New_York",
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "segments": [["2026-02-02T04:50:00Z", "2026-02-02T05:10:00Z"]],
+      "rows": [
+        { "day": "2026-02-01", "exact": 600, "billable": 900, "amounts": { "EUR": 1500 }, "exactAmounts": { "EUR": 1000 } },
+        { "day": "2026-02-02", "exact": 600, "billable": 900, "amounts": { "EUR": 1500 }, "exactAmounts": { "EUR": 1000 } }
+      ]
+    },
+    {
+      "name": "nearest rounds exact halves up and can round to zero",
+      "note": "450 s is half of 15 min: up to 900. 300 s: down to 0, kept.",
+      "zone": "UTC",
+      "rounding": [{ "from": "2000-01-01", "minutes": 15, "method": "nearest" }],
+      "rates": [],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:07:30Z"], ["2026-02-03T09:00:00Z", "2026-02-03T09:05:00Z"]],
+      "rows": [
+        { "day": "2026-02-02", "exact": 450, "billable": 900, "amounts": {}, "exactAmounts": {} },
+        { "day": "2026-02-03", "exact": 300, "billable": 0, "amounts": {}, "exactAmounts": {}, "roundedToZero": true }
+      ]
+    },
+    {
+      "name": "effective date picks the version per day",
+      "note": "Feb 28: 15 up, 20 min to 30. Mar 1: 30 down, 40 min to 30.",
+      "zone": "UTC",
+      "rounding": [
+        { "from": "2000-01-01", "minutes": 15, "method": "up" },
+        { "from": "2026-03-01", "minutes": 30, "method": "down" }
+      ],
+      "rates": [],
+      "segments": [["2026-02-28T09:00:00Z", "2026-02-28T09:20:00Z"], ["2026-03-01T09:00:00Z", "2026-03-01T09:40:00Z"]],
+      "rows": [
+        { "day": "2026-02-28", "exact": 1200, "billable": 1800, "amounts": {}, "exactAmounts": {} },
+        { "day": "2026-03-01", "exact": 2400, "billable": 1800, "amounts": {}, "exactAmounts": {} }
+      ]
+    },
+    {
+      "name": "billable pause adds to billable only, rounded once with exact",
+      "note": "Work 1200 s, pause 900 s: exact stays 1200 and pause 900. Counted 2100 rounds up once to 2700 (15 min up). 2700 s at 6000 c/h = 4500 c. Exact amount 1200 s = 2000 c.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:20:00Z"]],
+      "pauses": [["2026-02-02T09:20:00Z", "2026-02-02T09:35:00Z"]],
+      "rows": [{ "day": "2026-02-02", "exact": 1200, "pause": 900, "billable": 2700, "amounts": { "EUR": 4500 }, "exactAmounts": { "EUR": 2000 } }]
+    },
+    {
+      "name": "work and pause round together, not one by one",
+      "note": "420 s work plus 420 s pause is 840 s, up to 900 s once. Rounded separately it would be 900 + 900 = 1800. 900 s at 6000 c/h = 1500 c. Exact 420 s = 700 c.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:07:00Z"]],
+      "pauses": [["2026-02-02T09:07:00Z", "2026-02-02T09:14:00Z"]],
+      "rows": [{ "day": "2026-02-02", "exact": 420, "pause": 420, "billable": 900, "amounts": { "EUR": 1500 }, "exactAmounts": { "EUR": 700 } }]
+    },
+    {
+      "name": "a pause on a day with no work still earns",
+      "note": "No work on the day, only a 1800 s pause (exact multiple of 15 min). Exact 0, pause 1800, billable 1800 = 3000 c at 6000 c/h. Exact amount 0.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "segments": [],
+      "pauses": [["2026-02-04T10:00:00Z", "2026-02-04T10:30:00Z"]],
+      "rows": [{ "day": "2026-02-04", "exact": 0, "pause": 1800, "billable": 1800, "amounts": { "EUR": 3000 }, "exactAmounts": { "EUR": 0 } }]
+    },
+    {
+      "name": "a pause across midnight splits into two days",
+      "note": "23:50 to 00:10 UTC is 600 s on each day. Each day's 600 s of pause rounds up to 900 s (15 min up) = 1500 c at 6000 c/h.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "segments": [],
+      "pauses": [["2026-02-04T23:50:00Z", "2026-02-05T00:10:00Z"]],
+      "rows": [
+        { "day": "2026-02-04", "exact": 0, "pause": 600, "billable": 900, "amounts": { "EUR": 1500 }, "exactAmounts": { "EUR": 0 } },
+        { "day": "2026-02-05", "exact": 0, "pause": 600, "billable": 900, "amounts": { "EUR": 1500 }, "exactAmounts": { "EUR": 0 } }
+      ]
+    },
+    {
+      "name": "thinking counts in exact and billable like work",
+      "note": "Work 09:00-09:30 and thinking 09:30-10:00 on one task: exact 3600 (thinking is part of it), exact minutes (no rounding), billable 3600 = 6000 c at 6000 c/h.",
+      "zone": "UTC",
+      "rounding": [{ "from": "2000-01-01", "minutes": 0, "method": "nearest" }],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:30:00Z"]],
+      "thinking": [["2026-02-02T09:30:00Z", "2026-02-02T10:00:00Z"]],
+      "rows": [{ "day": "2026-02-02", "exact": 3600, "pause": 0, "billable": 3600, "amounts": { "EUR": 6000 }, "exactAmounts": { "EUR": 6000 } }]
+    },
+    {
+      "name": "fixed-fee project earns no hourly money but still rounds",
+      "note": "fixedFee: true makes the project earn its fee, not time at a rate, so no amounts. 60 s still rounds up to 900 s billable (hours for the effective rate).",
+      "zone": "UTC",
+      "fixedFee": true,
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:01:00Z"]],
+      "rows": [{ "day": "2026-02-02", "exact": 60, "pause": 0, "billable": 900, "amounts": {}, "exactAmounts": {} }]
+    },
+    {
+      "name": "a total is worked out once, not added up from rounded rows",
+      "note": "15 min at 3333 c/h = 833.25 c, shown as 833. Three shown add up to 2499. Exactly they are 2499.75, so 2500.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 3333, "currency": "EUR" }],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:15:00Z"], ["2026-02-03T09:00:00Z", "2026-02-03T09:15:00Z"], ["2026-02-04T09:00:00Z", "2026-02-04T09:15:00Z"]],
+      "rows": [
+        { "day": "2026-02-02", "exact": 900, "billable": 900, "amounts": { "EUR": 833 }, "exactAmounts": { "EUR": 833 } },
+        { "day": "2026-02-03", "exact": 900, "billable": 900, "amounts": { "EUR": 833 }, "exactAmounts": { "EUR": 833 } },
+        { "day": "2026-02-04", "exact": 900, "billable": 900, "amounts": { "EUR": 833 }, "exactAmounts": { "EUR": 833 } }
+      ],
+      "totals": { "EUR": 2500 }
+    },
+    {
+      "name": "a total over mixed rates rounds half up once",
+      "note": "Rows of 833.25, 833.25, 1666.5 + 834.25 and 834.25 c, shown as 833, 833, 2501, 834, which add up to 5001. Exactly they are 5001.5, so 5002.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [
+        { "from": "2026-01-01T00:00:00Z", "cents": 3333, "currency": "EUR" },
+        { "from": "2026-02-04T09:30:00Z", "cents": 3337, "currency": "EUR" }
+      ],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:15:00Z"], ["2026-02-03T09:00:00Z", "2026-02-03T09:15:00Z"], ["2026-02-04T09:00:00Z", "2026-02-04T09:45:00Z"], ["2026-02-05T09:00:00Z", "2026-02-05T09:15:00Z"]],
+      "rows": [
+        { "day": "2026-02-02", "exact": 900, "billable": 900, "amounts": { "EUR": 833 }, "exactAmounts": { "EUR": 833 } },
+        { "day": "2026-02-03", "exact": 900, "billable": 900, "amounts": { "EUR": 833 }, "exactAmounts": { "EUR": 833 } },
+        { "day": "2026-02-04", "exact": 2700, "billable": 2700, "amounts": { "EUR": 2501 }, "exactAmounts": { "EUR": 2501 } },
+        { "day": "2026-02-05", "exact": 900, "billable": 900, "amounts": { "EUR": 834 }, "exactAmounts": { "EUR": 834 } }
+      ],
+      "totals": { "EUR": 5002 }
+    },
+    {
+      "name": "each currency has its own total",
+      "note": "15 min at 3333 c/h is 833.25 c: two rows in EUR, a row with 15 min in each, one in USD. 3 x 833.25 = 2499.75, so 2500 in each. Rows shown add up to 2499 in each.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [
+        { "from": "2026-01-01T00:00:00Z", "cents": 3333, "currency": "EUR" },
+        { "from": "2026-02-04T09:15:00Z", "cents": 3333, "currency": "USD" }
+      ],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:15:00Z"], ["2026-02-03T09:00:00Z", "2026-02-03T09:15:00Z"], ["2026-02-04T09:00:00Z", "2026-02-04T09:30:00Z"], ["2026-02-05T09:00:00Z", "2026-02-05T09:15:00Z"], ["2026-02-06T09:00:00Z", "2026-02-06T09:15:00Z"]],
+      "rows": [
+        { "day": "2026-02-02", "exact": 900, "billable": 900, "amounts": { "EUR": 833 }, "exactAmounts": { "EUR": 833 } },
+        { "day": "2026-02-03", "exact": 900, "billable": 900, "amounts": { "EUR": 833 }, "exactAmounts": { "EUR": 833 } },
+        { "day": "2026-02-04", "exact": 1800, "billable": 1800, "amounts": { "EUR": 833, "USD": 833 }, "exactAmounts": { "EUR": 833, "USD": 833 } },
+        { "day": "2026-02-05", "exact": 900, "billable": 900, "amounts": { "USD": 833 }, "exactAmounts": { "USD": 833 } },
+        { "day": "2026-02-06", "exact": 900, "billable": 900, "amounts": { "USD": 833 }, "exactAmounts": { "USD": 833 } }
+      ],
+      "totals": { "EUR": 2500, "USD": 2500 }
+    },
+    {
+      "name": "a total of billable time follows the increment",
+      "note": "20 min up to 30 at 3333 c/h = 1666.5 c, shown as 1667. Three shown add up to 5001. Exactly they are 4999.5, so 5000. The 20 unrounded minutes would be 3333.",
+      "zone": "UTC",
+      "rounding": [],
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 3333, "currency": "EUR" }],
+      "segments": [["2026-02-02T09:00:00Z", "2026-02-02T09:20:00Z"], ["2026-02-03T09:00:00Z", "2026-02-03T09:20:00Z"], ["2026-02-04T09:00:00Z", "2026-02-04T09:20:00Z"]],
+      "rows": [
+        { "day": "2026-02-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 1667 }, "exactAmounts": { "EUR": 1111 } },
+        { "day": "2026-02-03", "exact": 1200, "billable": 1800, "amounts": { "EUR": 1667 }, "exactAmounts": { "EUR": 1111 } },
+        { "day": "2026-02-04", "exact": 1200, "billable": 1800, "amounts": { "EUR": 1667 }, "exactAmounts": { "EUR": 1111 } }
+      ],
+      "totals": { "EUR": 5000 }
+    }
+  ],
+  "summaries": [
+    {
+      "name": "a day billed in two summaries bills what the report shows",
+      "note": "20 min up to 30 = 3000 c. Then 40 min in all rounds to 45, and 30 are held, so 15 = 1500 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "segments": [["2026-03-02T14:00:00Z", "2026-03-02T14:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 1500 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 2700,
+      "report": 2700
+    },
+    {
+      "name": "voiding the first summary lets the next preview round what is left",
+      "note": "As above, then the first is voided: the second keeps its 15, and the 20 min back to unbilled bill the 30 the day still lacks, which is also what they round to alone, so no notice. Voiding both makes the day one row of 45.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "segments": [["2026-03-02T14:00:00Z", "2026-03-02T14:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 1500 }, "partlyBilled": 1, "create": true },
+        { "void": [0], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": false },
+        { "void": [1], "rows": [{ "day": "2026-03-02", "exact": 2400, "billable": 2700, "amounts": { "EUR": 4500 } }], "totals": { "EUR": 4500 }, "partlyBilled": 0, "create": true }
+      ],
+      "billed": 2700,
+      "report": 2700
+    },
+    {
+      "name": "a day rounds under the rule in force now, and what is issued stays",
+      "note": "30 issued under 15 up. Rounding turned off: 40 min in all, so 10 = 1000 c. Set to 60 up: 45 min in all rounds to 60, and 40 are held, so 20 = 2000 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "rule": { "from": "2000-01-01", "minutes": 0, "method": "nearest" }, "segments": [["2026-03-02T14:00:00Z", "2026-03-02T14:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 600, "amounts": { "EUR": 1000 } }], "totals": { "EUR": 1000 }, "partlyBilled": 1, "create": true },
+        { "rule": { "from": "2000-01-01", "minutes": 60, "method": "up" }, "segments": [["2026-03-02T16:00:00Z", "2026-03-02T16:05:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 300, "billable": 1200, "amounts": { "EUR": 2000 } }], "totals": { "EUR": 2000 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 3600,
+      "report": 3600
+    },
+    {
+      "name": "a day already past what the rule gives bills nothing more, and nothing goes back",
+      "note": "30 issued under 15 up, then rounding off: 25 min in all is less than the 30 held, so the 5 min bill 0.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "rule": { "from": "2000-01-01", "minutes": 0, "method": "nearest" }, "segments": [["2026-03-02T14:00:00Z", "2026-03-02T14:05:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 300, "billable": 0, "amounts": { "EUR": 0 } }], "totals": { "EUR": 0 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 1800,
+      "report": 1500
+    },
+    {
+      "name": "summaries from an older build stay, and later rows bill what is left",
+      "note": "The older build froze 30 + 30 for 45. 5 min more: 45 in all, 60 held, 0 billed. 30 min more: 75 in all, 60 held, 15 = 1500 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "segments": [["2026-03-02T14:00:00Z", "2026-03-02T14:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 1500 }, "partlyBilled": 1, "create": true, "asOlderBuild": { "billable": 1800, "amounts": { "EUR": 3000 } } },
+        { "segments": [["2026-03-02T16:00:00Z", "2026-03-02T16:05:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 300, "billable": 0, "amounts": { "EUR": 0 } }], "totals": { "EUR": 0 }, "partlyBilled": 1, "create": true },
+        { "segments": [["2026-03-02T17:00:00Z", "2026-03-02T17:30:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1800, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 1500 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 4500,
+      "report": 4500
+    },
+    {
+      "name": "a summary in another zone is shared out over this zone's days",
+      "note": "04:50 to 05:10 UTC is one 20 min row in UTC, up to 30. In New York, midnight at 05:00Z makes it 10 min on each of 1 and 2 March, so half of the 30 lies on each. 2 March then holds 10 + 20 = 30 min, which is 30, and 15 are held: 15 = 1500 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T04:50:00Z", "2026-03-02T05:10:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "zone": "America/New_York", "segments": [["2026-03-02T14:00:00Z", "2026-03-02T14:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 1500 }, "partlyBilled": 1, "create": true }
+      ],
+      "reportZone": "America/New_York",
+      "billed": 2700,
+      "report": 2700
+    },
+    {
+      "name": "the difference comes off the last rate of the row",
+      "note": "20 min at 6000 c/h up to 30 = 3000 c. Then 10 min at 6000 and 10 at 12000: 40 min in all rounds to 45, 30 held, so 15 bill: 10 at 6000 = 1000 c and 5 at 12000 = 1000 c.",
+      "rates": [
+        { "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" },
+        { "from": "2026-03-02T10:00:00Z", "cents": 12000, "currency": "EUR" }
+      ],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "segments": [["2026-03-02T09:50:00Z", "2026-03-02T10:10:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 900, "amounts": { "EUR": 2000 } }], "totals": { "EUR": 2000 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 2700,
+      "report": 2700
+    },
+    {
+      "name": "billed time moved to another day is held on that day",
+      "note": "20 min up to 30 on 2 March, then a correction from another device moves them to 3 March. 3 March holds 20 + 20 = 40 min, which is 45, and the 30 follow their time, so 15 = 1500 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "corrected": [["s0-0", "2026-03-03T09:00:00Z", "2026-03-03T09:20:00Z"]], "segments": [["2026-03-03T14:00:00Z", "2026-03-03T14:20:00Z"]], "rows": [{ "day": "2026-03-03", "exact": 1200, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 1500 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 2700,
+      "report": 2700
+    },
+    {
+      "name": "the day billed time was moved from rounds afresh",
+      "note": "As above, but the new 20 min are on 2 March, where nothing is left and nothing stays held: up to 30 = 3000 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "corrected": [["s0-0", "2026-03-03T09:00:00Z", "2026-03-03T09:20:00Z"]], "segments": [["2026-03-02T14:00:00Z", "2026-03-02T14:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true }
+      ],
+      "billed": 3600,
+      "report": 3600
+    },
+    {
+      "name": "part of a row moved takes its share with it",
+      "note": "10 + 10 min up to 30 on one row, then one 10 moves to 3 March, so half of the 30 goes with it. 3 March holds 10 + 20 = 30 min, which is 30, and 15 are held: 15 = 1500 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:10:00Z"], ["2026-03-02T10:00:00Z", "2026-03-02T10:10:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "corrected": [["s0-1", "2026-03-03T10:00:00Z", "2026-03-03T10:10:00Z"]], "segments": [["2026-03-03T14:00:00Z", "2026-03-03T14:20:00Z"]], "rows": [{ "day": "2026-03-03", "exact": 1200, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 1500 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 2700,
+      "report": 2700
+    },
+    {
+      "name": "time that moved takes its share, time cut stays held, and new work on the day it left",
+      "note": "23:00 to 00:10 bills 60 + 15. Corrected to 23:50 to 00:20, 50 min left 2 March and 10 came to 3 March, so 40 were cut and the 10 that moved take 10 of the 60 along. 2 March holds 10 + 60 = 70 min, which is 75, and 50 stay held: 25 = 2500 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T23:00:00Z", "2026-03-03T00:10:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 3600, "billable": 3600, "amounts": { "EUR": 6000 } }, { "day": "2026-03-03", "exact": 600, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 7500 }, "partlyBilled": 0, "create": true },
+        { "corrected": [["s0-0", "2026-03-02T23:50:00Z", "2026-03-03T00:20:00Z"]], "segments": [["2026-03-02T09:00:00Z", "2026-03-02T10:00:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 3600, "billable": 1500, "amounts": { "EUR": 2500 } }], "totals": { "EUR": 2500 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 6000,
+      "report": 6300
+    },
+    {
+      "name": "time that moved takes its share, time cut stays held, and new work on the day it came to",
+      "note": "As above, with the new hour on 3 March. 20 + 60 = 80 min is 90, and 15 + 10 are held: 65 = 6500 c. What is held for the time cut isn't taken off another day's work, so this comes to more than the report.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T23:00:00Z", "2026-03-03T00:10:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 3600, "billable": 3600, "amounts": { "EUR": 6000 } }, { "day": "2026-03-03", "exact": 600, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 7500 }, "partlyBilled": 0, "create": true },
+        { "corrected": [["s0-0", "2026-03-02T23:50:00Z", "2026-03-03T00:20:00Z"]], "segments": [["2026-03-03T09:00:00Z", "2026-03-03T10:00:00Z"]], "rows": [{ "day": "2026-03-03", "exact": 3600, "billable": 3900, "amounts": { "EUR": 6500 } }], "totals": { "EUR": 6500 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 8400,
+      "report": 6300
+    },
+    {
+      "name": "a little time brought does not take a whole row along",
+      "note": "8:00 and 5 min bill 8:00 + 15. The 8:00 are cut to 10 min and the 5 become 10, so at most 5 min moved and only their share goes. 2 March holds 10 min + 8:00, which is 8:15, and 7:55 stay held: 20 = 2000 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T17:00:00Z"], ["2026-03-03T09:00:00Z", "2026-03-03T09:05:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 28800, "billable": 28800, "amounts": { "EUR": 48000 } }, { "day": "2026-03-03", "exact": 300, "billable": 900, "amounts": { "EUR": 1500 } }], "totals": { "EUR": 49500 }, "partlyBilled": 0, "create": true },
+        { "corrected": [["s0-0", "2026-03-02T09:00:00Z", "2026-03-02T09:10:00Z"], ["s0-1", "2026-03-03T09:00:00Z", "2026-03-03T09:10:00Z"]], "segments": [["2026-03-02T10:00:00Z", "2026-03-02T18:00:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 28800, "billable": 1200, "amounts": { "EUR": 2000 } }], "totals": { "EUR": 2000 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 30900,
+      "report": 30600
+    },
+    {
+      "name": "time cut short on its own day stays held there",
+      "note": "30 issued for 20 min, then corrected to 10. 10 + 20 = 30 min is 30, and all 30 stay held, so the new row bills 0.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true },
+        { "corrected": [["s0-0", "2026-03-02T09:00:00Z", "2026-03-02T09:10:00Z"]], "segments": [["2026-03-02T14:00:00Z", "2026-03-02T14:20:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 1200, "billable": 0, "amounts": { "EUR": 0 } }], "totals": { "EUR": 0 }, "partlyBilled": 1, "create": true }
+      ],
+      "billed": 1800,
+      "report": 1800
+    },
+    {
+      "name": "a pause in the list goes before one that starts earlier",
+      "note": "Overlapping pauses, with only the later one in the period. It takes its whole 30 min, up to 30 = 3000 c, and the earlier one keeps only what is left.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "pauses": [["2026-03-02T23:30:00Z", "2026-03-03T00:30:00Z"], ["2026-03-03T00:10:00Z", "2026-03-03T00:40:00Z"]], "from": "2026-03-03", "to": "2026-03-03", "rows": [{ "day": "2026-03-03", "exact": 0, "pause": 1800, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": false }
+      ],
+      "billed": 0,
+      "report": 4500
+    },
+    {
+      "name": "a billed pause keeps its time from one that starts earlier",
+      "note": "A 1 h pause is billed. A pause marked later starts 30 min before it and runs into it, so it counts only those 30 min. The day is 90 min, and 60 are held: 30 = 3000 c.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 6000, "currency": "EUR" }],
+      "steps": [
+        { "pauses": [["2026-03-02T10:00:00Z", "2026-03-02T11:00:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 0, "pause": 3600, "billable": 3600, "amounts": { "EUR": 6000 } }], "totals": { "EUR": 6000 }, "partlyBilled": 0, "create": true },
+        { "pauses": [["2026-03-02T09:30:00Z", "2026-03-02T10:30:00Z"]], "rows": [{ "day": "2026-03-02", "exact": 0, "pause": 1800, "billable": 1800, "amounts": { "EUR": 3000 } }], "totals": { "EUR": 3000 }, "partlyBilled": 0, "create": true }
+      ],
+      "billed": 5400,
+      "report": 5400
+    },
+    {
+      "name": "a summary's total is worked out once from its rows",
+      "note": "Three rows of 15 min at 3333 c/h, 833 each as shown, 2499.75 exactly, so 2500.",
+      "rates": [{ "from": "2026-01-01T00:00:00Z", "cents": 3333, "currency": "EUR" }],
+      "steps": [
+        {
+          "segments": [["2026-03-02T09:00:00Z", "2026-03-02T09:15:00Z"], ["2026-03-03T09:00:00Z", "2026-03-03T09:15:00Z"], ["2026-03-04T09:00:00Z", "2026-03-04T09:15:00Z"]],
+          "rows": [
+            { "day": "2026-03-02", "exact": 900, "billable": 900, "amounts": { "EUR": 833 } },
+            { "day": "2026-03-03", "exact": 900, "billable": 900, "amounts": { "EUR": 833 } },
+            { "day": "2026-03-04", "exact": 900, "billable": 900, "amounts": { "EUR": 833 } }
+          ],
+          "totals": { "EUR": 2500 },
+          "partlyBilled": 0,
+          "create": true
+        }
+      ],
+      "billed": 2700,
+      "report": 2700
+    }
+  ]
+}

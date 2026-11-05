@@ -1,0 +1,210 @@
+// What the Rust side (src/ui.rs) writes and the callbacks it answers. The list models are written by zwt-bridge's
+// hub, row by row and only when a row changed; `now-sec` is the one value that changes every second, and only while
+// a task runs; `now-min` changes once a minute, and only while nothing runs and today's axis is on screen
+// (src/clock.rs). Times are unix seconds in `int`: Slint computes in f64, so differences are exact.
+
+/// A tag chip on a task card (1.x TagPicker.tsx `TagChip`).
+export struct TagData {
+    name: string,
+    color: color,
+    text-color: color,
+}
+
+/// One task card. `state`: 0 draft, 1 running, 2 paused, 3 stopped. Each group's model (AppState `active-tasks`,
+/// `draft-tasks`, `stopped-tasks`) holds its cards in the group's order (zwt-bridge `task_rows`).
+export struct TaskRowData {
+    id: string,
+    name: string,
+    state: int,
+    has-project: bool,
+    project-name: string,
+    project-color: color,
+    project-text: color,
+    project-archived: bool,
+    tags: [TagData],
+    // "1h 40m logged" under a paused or stopped task, else empty.
+    logged-text: string,
+    // The task runs on this device: `open-since` is the start of the piece being timed.
+    running-here: bool,
+    open-since: int,
+    // A pause reason, "Paused. Time is not being counted.", or "Stopped ... UTC.".
+    note: string,
+    // `note` is why the task was paused (drawn boxed); false for "Paused. Time is not being counted.".
+    note-is-reason: bool,
+    cold-note: string,
+    start-on: bool,
+    start-why: string,
+    pause-on: bool,
+    pause-why: string,
+    resume-on: bool,
+    resume-why: string,
+    stop-on: bool,
+    stop-why: string,
+}
+
+/// One block of the day axis. An `open` block runs on this device and ends at `AppState.now-sec`.
+export struct PieceData {
+    id: string,
+    label: string,
+    start: int,
+    end: int,
+    open: bool,
+    color: color,
+    text-color: color,
+    // A billable pause: drawn as an outline in the project colour (1.x `.k-billablePause`).
+    outline: bool,
+    lane: int,
+}
+
+/// The day axis' sub-grid (zwt-ui-logic `day::SubGrid`): in each hour, a line `step` minutes into it, then at each
+/// further `step`, `per-hour` lines in all; 0 and 0 for none.
+export struct SubGrid {
+    step: int,
+    per-hour: int,
+}
+
+/// A project's closed seconds on a day.
+export struct ChipPart {
+    color: color,
+    secs: int,
+}
+
+/// One chip of the day picker. The chips come the oldest first: the picker runs from the past to the future.
+export struct ChipData {
+    // yyyy-mm-dd: the argument of select-day, compared with AppState.day-date and today-date.
+    date: string,
+    // "Tue", "3 Nov", and "Tue 3 Nov 2026" for screen readers.
+    weekday: string,
+    short: string,
+    title: string,
+    // "T" and "3": what a compact chip writes, when the page's chips are too narrow for their names and dates.
+    initial: string,
+    day: string,
+    parts: [ChipPart],
+}
+
+/// One slice of the Share of time donut and its legend row (zwt-ui-logic `ShareRow`).
+export struct ShareRowData {
+    label: string,
+    // What follows the label, in muted text: each name after a middle dot, as one text (" · Logo concepts · Brand
+    // refresh"), so a row too narrow for it all is cut once, at its end. Empty when nothing follows.
+    context: string,
+    // "Brand refresh > Logo concepts": with `text`, the slice's accessible name (PARITY 388).
+    full-path: string,
+    // What a screen reader says for the legend row: the name and the rest of its path.
+    spoken: string,
+    // `text` ("16h 50m (47%)") and its two columns ("16h 50m", "(47%)").
+    text: string,
+    hm: string,
+    pct: string,
+    color: color,
+    // The grouped rest: drawn in the theme's border-strong.
+    other: bool,
+    // A combination of tags: every tag's colour, drawn as stripes.
+    stripes: [color],
+    // The striped swatch: per colour of `stripes`, SVG path commands (px of the 12 px swatch) of that colour's stripes;
+    // the first colour is the swatch's background, so its entry is empty (src/convert.rs).
+    swatch-stripes: [string],
+}
+
+/// Where a slice starts and ends, in degrees clockwise from the top (written with the rows, src/ui.rs), and for a
+/// combination of tags, per colour of its stripes, SVG path commands (px of the ring's 252 px box) of that colour's
+/// stripes cut to the slice; the first colour fills the whole slice, so its entry is empty.
+export struct ShareArc {
+    from: float,
+    to: float,
+    stripes: [string],
+}
+
+export global AppState {
+    // The running clock's second: elapsed texts and the running block. It stands still while nothing runs.
+    in property <int> now-sec;
+    // The now line's time while nothing runs: the second its minute clock started, then each whole minute.
+    in property <int> now-min;
+    // The task list, in 1.x's groups (TaskRail.tsx): Active (running and paused), Drafts, Stopped (its first page, or
+    // every stopped task); each model in its group's order (zwt-bridge `task_rows`), written by zwt-bridge's hub
+    // through a `GroupedSink`.
+    in property <[TaskRowData]> active-tasks;
+    in property <[TaskRowData]> draft-tasks;
+    in property <[TaskRowData]> stopped-tasks;
+    // The Stopped group's paging (zwt-bridge `StoppedPage`): every stopped task, listed or not (the {n} of
+    // "Show all {n} stopped tasks"); more of them than a page, so the link under the group is there; every one listed,
+    // so the link reads "Show fewer".
+    in property <int> stopped-total;
+    in property <bool> stopped-paged;
+    in property <bool> stopped-all;
+    in property <string> running-id;
+
+    in property <string> day-date;
+    in property <string> today-date;
+    in property <string> day-label;
+    in property <int> day-start;
+    in property <int> day-end: 86400;
+    in property <int> day-lanes: 1;
+    // The minutes the axis' sub-grid splits each hour by: the rounding increment in force on the day shown, 15 when
+    // none is saved or rounding is off (zwt-bridge DayHead). 0, no sub-grid, until the worker's first update.
+    in property <int> day-increment;
+    in property <[PieceData]> pieces;
+    in property <[ChipData]> chips;
+    // The day picker's arrows: a day with time lies before its page (older), its page ends before today (newer).
+    in property <bool> days-older;
+    in property <bool> days-newer;
+
+    // Share levels: 0 Projects, 1 Tasks, 2 Subtasks, 3 Tags; picked is -1 until the user picks one.
+    in property <int> share-picked: -1;
+    in property <int> share-shown;
+    in property <bool> share-subtasks-available;
+    in property <string> share-total-text;
+    in property <string> share-note;
+    in property <string> share-footnote;
+    in property <string> share-period;
+    in property <[ShareRowData]> share-rows;
+    in property <[ShareArc]> share-arcs;
+
+    // A notice (1.x toast): shown until dismissed (notice-dismissed), or until src/ui.rs takes it away 8 s after it
+    // appeared, whether or not a task runs.
+    in-out property <string> notice-text;
+
+    in property <string> app-version;
+    in property <string> notices-text;
+    // Diagonal lines 12 px apart and 8 px apart, for the running block and billable pauses (src/convert.rs).
+    in property <string> live-lines;
+    in property <string> pause-lines;
+
+    callback start-task(string);
+    callback pause-task(string);
+    callback resume-task(string);
+    callback stop-task(string);
+    // The link under the Stopped group: every stopped task (true), or the first page again (false).
+    callback show-all-stopped(bool);
+    callback select-day(string);
+    // The day picker's arrows: one page of days into the past, or towards today.
+    callback show-older-days();
+    callback show-newer-days();
+    callback set-share-level(int);
+    // The notice's close button cleared notice-text: its timer can stop.
+    callback notice-dismissed();
+    // The Timeline tab came on screen (true) or left it (false): today's axis, and so the now line's minute clock,
+    // only run on it.
+    callback timeline-shown(bool);
+    // The sub-grid for an increment (minutes) on an axis drawn so many pixels a minute: the increment's lines while
+    // they stay 3 px apart, else a multiple's (src/ui.rs, zwt-ui-logic `day::sub_grid`). The day axis asks when its
+    // increment, its day's length or its width changes (`changed` handlers), never on a clock tick.
+    pure callback sub-grid(int, float) -> SubGrid;
+}
+
+/// Formats derived in Slint, so the running clock needs no Rust call per second.
+export global Fmt {
+    /// Two digits: "05".
+    pure public function pad2(n: int) -> string {
+        return n < 10 ? "0" + n : "" + n;
+    }
+
+    /// The running clock, 1.x `formatHMS` as LiveTicker's SessionClock uses it: "1:02:05", "0:00:00" below zero.
+    /// tests/ui_ticker.rs pins it to zwt_ui_logic::format::ticker.
+    pure public function ticker(secs: int) -> string {
+        // Not Math.max: it answers in float (f32), which rounds seconds above 2^24.
+        let s = secs < 0 ? 0 : secs;
+        return "" + Math.floor(s / 3600) + ":" + Fmt.pad2(Math.mod(Math.floor(s / 60), 60)) + ":" + Fmt.pad2(Math.mod(s, 60));
+    }
+}

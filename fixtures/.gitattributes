@@ -1,0 +1,3 @@
+# Carried over from the 1.x repo's root .gitattributes at a88c1aa. Windows checkouts run with core.autocrlf=true,
+# which would rewrite text files. The core's tests (and 1.x's TypeScript tests) hold both sides to these files.
+*.json text eol=lf

@@ -1,0 +1,241 @@
+// Words of the 2.0 UI, copied verbatim from 1.x (PLAN.md 7.2 and 8): same case, punctuation, typographic quotes and
+// dashes. Never paraphrase here; change a string only when 1.x changed it.
+//
+// Every entry ends with one of:
+//   // <path>               the 1.x file (relative to the 1.x repo root) that writes these words
+//   // 2.0-only: <reason>   1.x has no such string; worded in the 1.x style
+// tests/parity_strings.rs checks each sourced entry against its file: every literal piece of the text (the text split
+// at its placeholders) must appear in that file, in order, with runs of whitespace counted as one space.
+//
+// Placeholders: {name} (lowercase letters, digits, -) marks a runtime part, as in `Controls for {task}`. Slint has no
+// string replace, so a template is filled in Rust: read it with `app.global::<Strings>().get_timer_controls_label()`
+// and replace "{task}" with the value. In Slint, plain { } inside a string are literal text (only \{ interpolates).
+// Durations ({duration}, {hm}) are formatted as the duration-* patterns below. Escapes: \" is a straight double quote.
+
+export global Strings {
+    // Navigation. 1.x tabs: Timeline, Analysis, Billing, Projects, Settings (About is a Settings section there).
+    // The 2.0 M1 menu shows Timeline and About.
+    out property <string> app-name: "zWorkTracker"; // src/components/Shell.tsx
+    out property <string> nav-timeline: "Timeline"; // src/components/Shell.tsx
+    out property <string> nav-analysis: "Analysis"; // src/components/Shell.tsx
+    out property <string> nav-billing: "Billing"; // src/components/Shell.tsx
+    out property <string> nav-projects: "Projects"; // src/components/Shell.tsx
+    out property <string> nav-settings: "Settings"; // src/components/Shell.tsx
+    out property <string> nav-about: "About"; // src/features/settings/SettingsTab.tsx
+    out property <string> nav-sections-label: "Sections"; // src/components/Shell.tsx - accessible name of the tab bar
+
+    // Timer buttons. Their accessible name is the visible word; the group around them is named by
+    // timer-controls-label. A disabled button's tooltip (title) is one of the timer-why-* reasons.
+    out property <string> timer-start: "Start"; // src/features/tasks/TaskCard.tsx
+    out property <string> timer-pause: "Pause"; // src/features/tasks/TaskCard.tsx
+    out property <string> timer-resume: "Resume"; // src/features/tasks/TaskCard.tsx
+    out property <string> timer-stop: "Stop"; // src/features/tasks/TaskCard.tsx
+    out property <string> timer-controls-label: "Controls for {task}"; // src/features/tasks/TaskCard.tsx
+    out property <string> timer-why-wrong-state: "Only available when the task is {state}."; // src/features/tasks/taskLogic.ts
+    out property <string> timer-why-state-running: "running"; // src/features/tasks/taskLogic.ts - {state} for Pause
+    out property <string> timer-why-state-paused: "paused"; // src/features/tasks/taskLogic.ts - {state} for Resume
+    out property <string> timer-why-state-draft: "a draft"; // src/features/tasks/taskLogic.ts - {state} for Start
+    out property <string> timer-why-start-first: "Start the task first."; // src/features/tasks/taskLogic.ts
+    out property <string> timer-why-finished: "This task is finished."; // src/features/tasks/taskLogic.ts
+    out property <string> timer-why-no-project: "This task has no project."; // src/features/tasks/taskLogic.ts
+    out property <string> timer-why-archived: "Project \"{project}\" is archived. Restore it first."; // src/features/tasks/taskLogic.ts
+    out property <string> timer-why-cold-start: "The first start after launch needs {fields}. Edit the task to add {them-or-it}."; // src/features/tasks/taskLogic.ts - {fields}: missing field ids (name, project, description, tags) joined by ", "
+    out property <string> timer-why-cold-them: "them"; // src/features/tasks/taskLogic.ts - {them-or-it} for several fields or tags
+    out property <string> timer-why-cold-it: "it"; // src/features/tasks/taskLogic.ts - {them-or-it} for one field other than tags
+    out property <string> timer-why-running-elsewhere: "Running on {device}. Pause it there, or ask for a pause from here."; // src/features/tasks/taskLogic.ts
+
+    // Task states (the badge on a task card).
+    out property <string> state-draft: "Draft"; // src/features/tasks/taskLogic.ts
+    out property <string> state-running: "Running"; // src/features/tasks/taskLogic.ts
+    out property <string> state-paused: "Paused"; // src/features/tasks/taskLogic.ts
+    out property <string> state-stopped: "Stopped"; // src/features/tasks/taskLogic.ts
+
+    // Starting one task pauses the running one (PARITY row 91): a notice on screen, and a note on the paused task.
+    out property <string> notice-auto-paused: "Paused \"{paused}\" because you started \"{started}\". Only one task is timed at a time."; // src/components/useCommands.ts
+    out property <string> notice-dismiss: "Dismiss message"; // src/components/Toasts.tsx - accessible name of the notice's close button
+    out property <string> pause-reason-auto: "Auto-paused because \"{task}\" was started."; // src/features/tasks/taskLogic.ts
+    out property <string> pause-reason-auto-unknown: "another task"; // src/features/tasks/taskLogic.ts - {task} when the starter is gone
+    out property <string> pause-reason-user: "Paused by you."; // src/features/tasks/taskLogic.ts
+    out property <string> pause-reason-app-quit: "Paused when the app was closed. Time stopped at that moment."; // src/features/tasks/taskLogic.ts
+    out property <string> pause-reason-crash: "Paused after the app closed unexpectedly. Time counts up to the last moment the app was seen running."; // src/features/tasks/taskLogic.ts
+    out property <string> pause-reason-sync: "Paused while merging with another device."; // src/features/tasks/taskLogic.ts
+    out property <string> pause-reason-backup: "Paused: the restored backup held this running. Time stopped at the last moment the backup knows about."; // src/features/tasks/taskLogic.ts
+    out property <string> pause-reason-remote: "Paused because another device asked for it. Time stopped at the moment of the request."; // src/features/tasks/taskLogic.ts
+    out property <string> task-paused-note: "Paused. Time is not being counted."; // src/features/tasks/TaskCard.tsx - paused with no reason
+    out property <string> task-cold-resume-note: "After a restart, Resume asks for every field again and starts a new task that continues this one. This task stays as it is."; // src/features/tasks/TaskCard.tsx
+
+    // Task card.
+    out property <string> task-no-project: "No project"; // src/features/tasks/TaskCard.tsx
+    out property <string> task-logged: "{duration} logged"; // src/features/tasks/TaskCard.tsx
+    out property <string> task-stopped-at: "Stopped {date} {time} UTC."; // src/features/tasks/TaskCard.tsx - {date} YYYY-MM-DD, {time} HH:MM
+    out property <string> task-edit-label: "Edit {task}"; // src/features/tasks/TaskCard.tsx
+    out property <string> task-continuation-links: "Continuation links"; // src/features/tasks/TaskCard.tsx
+    out property <string> task-continued-from: "Continued from"; // src/features/tasks/TaskCard.tsx - then the task's name as a link
+    out property <string> task-continued-from-unknown: "an earlier task"; // src/features/tasks/TaskCard.tsx
+    out property <string> task-continued-by: "Continued by"; // src/features/tasks/TaskCard.tsx
+
+    // Live ticker of the running task.
+    out property <string> ticker-label: "Live time and earnings"; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-zero: "0:00:00"; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-this-session: "this session"; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-today-exact: "Today, exact"; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-today-billable: "Today, billable"; // src/features/tasks/LiveTicker.tsx - then " ({increment})" when rounding is on
+    out property <string> ticker-increment: "{minutes} min, {method}"; // src/features/tasks/LiveTicker.tsx
+    out property <string> rounding-up: "Up"; // src/features/tasks/LiveTicker.tsx - {method}
+    out property <string> rounding-down: "Down"; // src/features/tasks/LiveTicker.tsx - {method}
+    out property <string> rounding-nearest: "Nearest"; // src/features/tasks/LiveTicker.tsx - {method}
+    out property <string> ticker-billable-now: "Billable now"; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-changes-in-steps: " (changes in steps)"; // src/features/tasks/LiveTicker.tsx - after Billable now when rounding is on
+    out property <string> ticker-includes-thinking: " includes {duration} thinking"; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-includes-pauses: " includes {duration} billable pauses"; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-no-amount: "—"; // src/features/tasks/LiveTicker.tsx - Billable now with no amount
+    out property <string> ticker-fixed-fee: "Fixed fee"; // src/features/tasks/LiveTicker.tsx - then ": {amount}" when set
+    out property <string> ticker-hourly-not-counted: ". Hourly earnings are not counted."; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-no-rate: "No rate set."; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-set-a-rate: "Set a rate"; // src/features/tasks/LiveTicker.tsx
+    out property <string> ticker-non-billable: "Non-billable project."; // src/features/tasks/LiveTicker.tsx
+
+    // Task list beside the Timeline.
+    out property <string> rail-title: "Tasks"; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-new-task: "New task"; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-active: "Active"; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-drafts: "Drafts"; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-stopped: "Stopped"; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-empty: "No tasks yet. Use New task to add one, then press Start to begin timing."; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-show-fewer: "Show fewer"; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-show-all-stopped: "Show all {n} stopped tasks"; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-no-match: "No task matches this filter."; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-needs-project: "Tasks belong to a project."; // src/features/tasks/TaskRail.tsx
+    out property <string> rail-create-project: "Create a project first"; // src/features/tasks/TaskRail.tsx
+
+    // Timeline: period totals.
+    out property <string> timeline-period-totals: "Period totals"; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-today: "Today"; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-this-week: "This week"; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-total-label: "{label}:"; // src/features/timeline/TimelineTab.tsx - then the amount, or the Billable time
+    out property <string> timeline-billable: "Billable {duration}"; // src/features/timeline/TimelineTab.tsx - detail line when Billable and Exact differ
+    out property <string> timeline-amount: " ({amount})"; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-exact: " · Exact {duration}"; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-includes-pauses: " · includes {duration} billable pauses"; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-rounding-off: "{duration} logged, rounding off"; // src/features/timeline/TimelineTab.tsx - detail line when they are equal
+    out property <string> timeline-zone-line: "{day}, shown in {zone}. Weeks start on Monday ({monday})."; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-filter-note: " Totals and days follow the task filter."; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-empty: "Nothing is logged yet. Create a task, press Start, and its time appears here as a block on today's axis."; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-empty-filtered: "No logged time matches this filter. Clear it to see every day again."; // src/features/timeline/TimelineTab.tsx
+    out property <string> timeline-show-older: "Show older ({n} more days)"; // src/features/timeline/TimelineTab.tsx
+
+    // Day picker (M1 shows one day's axis at a time; its days run from the past to the future, 1.x lists every day
+    // newest first). Its arrows move it a page of days back or forward.
+    out property <string> day-picker-label: "Day shown"; // 2.0-only: 1.x Timeline has no day picker; named like the 1.x accessible names ("Period totals")
+    out property <string> day-picker-previous: "Previous days"; // 2.0-only: 1.x Timeline has no day picker; the left arrow's accessible name, as Analysis "Previous period" (src/features/analysis/Controls.tsx)
+    out property <string> day-picker-next: "Next days"; // 2.0-only: 1.x Timeline has no day picker; the right arrow's accessible name, as Analysis "Next period" (src/features/analysis/Controls.tsx)
+    out property <string> day-picker-today: "Today"; // src/features/analysis/Controls.tsx - the jump-back button of the Analysis range
+
+    // Day card.
+    out property <string> day-today: "Today, {date}"; // src/components/format.ts
+    out property <string> day-yesterday: "Yesterday, {date}"; // src/components/format.ts
+    out property <string> day-date: "{weekday} {d} {month} {year}"; // src/components/format.ts - "Thu 12 Mar 2026"
+    out property <string> day-short-date: "{d} {month}"; // src/components/format.ts - "12 Mar", on the axis at midnight
+    out property <string> day-hours-badge: "{hours}-hour day"; // src/features/timeline/DayCard.tsx
+    out property <string> day-hours-badge-title: "Clocks changed on this day, so it is not 24 hours long"; // src/features/timeline/DayCard.tsx
+    out property <string> day-zone-title: "The zone this day is cut in"; // src/features/timeline/DayCard.tsx
+    out property <string> day-billable: "Billable"; // src/features/timeline/DayCard.tsx - when Billable and Exact differ
+    out property <string> day-total: "Total"; // src/features/timeline/DayCard.tsx - when they are equal
+    out property <string> day-exact: "Exact"; // src/features/timeline/DayCard.tsx
+    out property <string> day-includes-pauses: "includes {duration} billable pauses"; // src/features/timeline/DayCard.tsx
+    out property <string> day-includes-thinking: "includes {duration} thinking"; // src/features/timeline/DayCard.tsx
+    out property <string> day-per-project-label: "Totals per project"; // src/features/timeline/DayCard.tsx
+    out property <string> day-project-billable: " billable"; // src/features/timeline/DayCard.tsx - after a project's Billable time
+    out property <string> day-project-exact: "{duration} exact"; // src/features/timeline/DayCard.tsx
+    out property <string> day-non-billable: "Non-billable"; // src/features/timeline/DayCard.tsx
+    out property <string> day-fixed-fee: "Fixed fee"; // src/features/timeline/DayCard.tsx
+    out property <string> day-no-rate: "No rate set"; // src/features/timeline/DayCard.tsx
+    out property <string> day-set-rate: "Set rate"; // src/features/timeline/DayCard.tsx
+    out property <string> day-unknown-project: "Unknown project"; // src/features/timeline/DayCard.tsx
+    out property <string> day-col-time: "Time"; // src/features/timeline/DayCard.tsx
+    out property <string> day-col-task: "Task"; // src/features/timeline/DayCard.tsx
+    out property <string> day-col-project: "Project"; // src/features/timeline/DayCard.tsx
+    out property <string> day-col-duration: "Duration"; // src/features/timeline/DayCard.tsx
+
+    // Day axis.
+    out property <string> axis-name: "{city} time"; // src/features/timeline/DayCard.tsx - {city} of the zone shown
+    out property <string> axis-label: "{name} axis"; // src/features/timeline/Axis.tsx - accessible name, {name} = axis-name
+    out property <string> axis-now: "Now"; // src/features/timeline/Axis.tsx
+    out property <string> axis-hour: "{hh}:00"; // src/features/timeline/axisGeometry.ts - labels every third hour, 00 03 06 ...
+    out property <string> axis-hour-again: "{hh}:00 again"; // src/features/timeline/axisGeometry.ts - the repeated hour of a 25-hour day
+    out property <string> band-night: "Night"; // src/lib/split.ts
+    out property <string> band-morning: "Morning"; // src/lib/split.ts
+    out property <string> band-afternoon: "Afternoon"; // src/lib/split.ts
+    out property <string> band-evening: "Evening"; // src/lib/split.ts
+    out property <string> band-hours-night: "00–06"; // src/features/timeline/DayCard.tsx
+    out property <string> band-hours-morning: "06–12"; // src/features/timeline/DayCard.tsx
+    out property <string> band-hours-afternoon: "12–18"; // src/features/timeline/DayCard.tsx
+    out property <string> band-hours-evening: "18–24"; // src/features/timeline/DayCard.tsx
+
+    // Legend of the day axes: "<word>: <text>", the word bold.
+    out property <string> legend-label: "Legend"; // src/features/timeline/Legend.tsx
+    out property <string> kind-work: "Work"; // src/features/timeline/Legend.tsx
+    out property <string> legend-work: "worked time, in Exact and Billable"; // src/features/timeline/Legend.tsx
+    out property <string> kind-thinking: "Thinking"; // src/features/timeline/Axis.tsx
+    out property <string> legend-thinking: "away time you marked as thinking, in Exact and Billable"; // src/features/timeline/Legend.tsx
+    out property <string> kind-billable-pause: "Billable pause"; // src/features/timeline/Axis.tsx
+    out property <string> legend-billable-pause: "billed but not worked, in Billable only"; // src/features/timeline/Legend.tsx
+    out property <string> kind-unconfirmed: "Unconfirmed"; // src/features/timeline/Axis.tsx
+    out property <string> legend-unconfirmed: "time away not counted until you confirm"; // src/features/timeline/Legend.tsx
+    out property <string> kind-dropped: "Dropped"; // src/features/timeline/Axis.tsx
+    out property <string> legend-dropped: "time away removed from your time"; // src/features/timeline/Legend.tsx
+    out property <string> mark-corrected: "Corrected"; // src/features/timeline/Axis.tsx
+    out property <string> legend-corrected: "the recorded time was changed; the raw time is shown beside it"; // src/features/timeline/Legend.tsx
+    out property <string> mark-manual: "Added by hand"; // src/features/timeline/Axis.tsx
+    out property <string> legend-manual: "time entered by hand, with its reason"; // src/features/timeline/Legend.tsx
+
+    // Share of time (a donut and its legend; in 1.x an Analysis card, in 2.0 M1 on the Timeline screen).
+    out property <string> share-title: "Share of time"; // src/features/analysis/SectionsA.tsx
+    out property <string> share-by-label: "Share of time by"; // src/features/analysis/SectionsA.tsx - accessible name of the level switch
+    out property <string> share-level-projects: "Projects"; // src/features/analysis/shareLevels.ts
+    out property <string> share-level-tasks: "Tasks"; // src/features/analysis/shareLevels.ts
+    out property <string> share-level-subtasks: "Subtasks"; // src/features/analysis/shareLevels.ts
+    out property <string> share-level-tags: "Tags"; // src/features/analysis/shareLevels.ts
+    out property <string> share-no-subtask-time: "No subtask time in this period"; // src/features/analysis/shareLevels.ts - tooltip of the Subtasks segment while it is off
+    out property <string> share-donut-label: "Share of time per {noun}"; // src/features/analysis/SectionsA.tsx
+    out property <string> share-noun-project: "project"; // src/features/analysis/shareLevels.ts - {noun}
+    out property <string> share-noun-task: "task"; // src/features/analysis/shareLevels.ts - {noun}
+    out property <string> share-noun-subtask: "subtask"; // src/features/analysis/shareLevels.ts - {noun}
+    out property <string> share-noun-tag: "tag"; // src/features/analysis/shareLevels.ts - {noun}
+    out property <string> share-legend-label: "Share of time legend, {level}"; // src/features/analysis/SectionsA.tsx - {level}: projects, tasks, subtasks or tags
+    out property <string> share-centre-total: "{h}h {mm}m"; // src/features/analysis/shareSlices.ts - centre, top line: the total
+    out property <string> share-centre-billable: "Billable"; // src/features/analysis/secenv.ts - centre, bottom line: the basis
+    out property <string> share-centre-exact: "Exact"; // src/features/analysis/secenv.ts - centre, bottom line: the basis
+    out property <string> share-row-figure: "{hm} {percent}"; // src/features/analysis/shareSlices.ts - "16h 50m (47%)"
+    out property <string> share-percent: "({n}%)"; // src/features/analysis/shareSlices.ts
+    out property <string> share-percent-tiny: "(<1%)"; // src/features/analysis/shareSlices.ts - a row with time whose share rounds to 0
+    out property <string> share-no-subtask: "{task} (no subtask)"; // src/features/analysis/shareSlices.ts
+    out property <string> share-no-tag: "No tag"; // src/features/analysis/shareSlices.ts
+    out property <string> share-tag-joiner: " + "; // src/features/analysis/shareSlices.ts - "Design + Client"
+    out property <string> share-other-tasks: "Other ({n} tasks)"; // src/features/analysis/shareSlices.ts
+    out property <string> share-other-subtasks: "Other ({n} subtasks)"; // src/features/analysis/shareSlices.ts
+    out property <string> share-other-combinations: "Other ({n} combinations)"; // src/features/analysis/shareSlices.ts
+    out property <string> share-other-tip: "The {n} {units} with the least time. View data lists every {unit}."; // src/features/analysis/shareSlices.ts - tooltip of the Other slice
+    out property <string> share-other-note: "Other adds up the {n} {units} with the least time. View data lists every {unit}."; // src/features/analysis/shareSlices.ts - note under the donut
+    out property <string> share-unit-combination: "combination"; // src/features/analysis/shareSlices.ts - {unit}; task and subtask are share-noun-*
+    out property <string> share-combination-note: "Tasks with several tags are counted once, under their combination."; // src/features/analysis/shareSlices.ts
+    out property <string> share-empty: "No time logged in this period. Try another range or clear the filters."; // src/features/analysis/SectionsA.tsx
+    out property <string> share-spoken-task: "{name}, project {project}"; // src/features/analysis/shareSlices.ts - accessible name of a task row
+    out property <string> share-spoken-subtask: "{name}, task {task}, project {project}"; // src/features/analysis/shareSlices.ts - accessible name of a subtask row
+
+    // Duration formats used by every figure above.
+    out property <string> duration-hours: "{h}h {mm}m"; // src/components/format.ts - "2h 05m"
+    out property <string> duration-minutes-seconds: "{m}m {ss}s"; // src/components/format.ts - "45m 10s"
+    out property <string> duration-minutes: "{m}m"; // src/components/format.ts - "45m"
+    out property <string> duration-seconds: "{s}s"; // src/components/format.ts - "30s"
+    out property <string> duration-hms: "{h}:{mm}:{ss}"; // src/components/format.ts - "1:02:03", the ticking clock and tooltips
+
+    // About.
+    out property <string> about-app-version: "App version"; // src/features/settings/OtherSections.tsx
+    out property <string> about-privacy: "This app collects no telemetry and makes no network requests of its own. Time you log stays on this computer unless you turn on sync."; // src/features/settings/OtherSections.tsx
+    out property <string> about-zone-rules: "Time zone rules ship inside the app. When governments change daylight saving rules, the fix arrives with an app update, so keep the app up to date for correct hours on future dates. Past dates keep the offsets they had."; // src/features/settings/OtherSections.tsx
+    out property <string> about-licence: "zWorkTracker is MIT licensed (see {licence-file})."; // THIRD_PARTY_NOTICES.md - {licence-file}: LICENSE; the 1.x About section has no licence line
+    out property <string> about-licence-link: "MIT License"; // site/index.html - footer link text to the licence
+    out property <string> about-notices-link: "Third-party notices"; // THIRD_PARTY_NOTICES.md - its title; the 1.x About section has no link to it
+    out property <string> about-slint: "zWorkTracker uses Slint for its user interface, under the Slint Royalty-free Desktop, Mobile, and Web Applications License 2.0."; // 2.0-only: Slint attribution beside AboutSlint (PLAN.md 9); worded as this repo's THIRD_PARTY_NOTICES.md
+}

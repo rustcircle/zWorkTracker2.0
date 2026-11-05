@@ -1,0 +1,8 @@
+# Carried over from the 1.x repo's root .gitattributes at a88c1aa for the files vendored here. Windows checkouts run
+# with core.autocrlf=true, which would rewrite text files.
+
+# As downloaded: fonts/SOURCE.md records its SHA-256, and the installer ships it.
+fonts/OFL.txt -text
+
+# Git already detects these as binary. This keeps it from guessing.
+*.ttf binary

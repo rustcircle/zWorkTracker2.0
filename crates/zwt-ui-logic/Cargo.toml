@@ -1,0 +1,21 @@
+[package]
+name = "zwt-ui-logic"
+description = "Rust ports of the rules zWorkTracker 1.x keeps only in TypeScript: Share of time, a day's pieces, duration texts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+z-work-core.workspace = true
+chrono.workspace = true
+chrono-tz.workspace = true
+
+[dev-dependencies]
+# Already in the graph through z-work-core: builds the TipTap descriptions that carry subtasks in the test fixtures.
+serde_json.workspace = true
+
+[lints]
+workspace = true

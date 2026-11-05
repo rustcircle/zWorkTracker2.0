@@ -1,0 +1,568 @@
+// Shared primitives after 1.x src/styles/ui.css and src/components/{ui.tsx,icons.tsx,TimerButton.tsx}.
+// Every colour is a Theme token; `a.mix(b, f)` is CSS `color-mix(in srgb, a f, b)`.
+
+import { Theme } from "theme.slint";
+
+// The 1.x stroke icons (icons.tsx `Svg`): a 24-unit view box, every glyph stroked 2 units in its colour with round
+// caps and joins; play, pause and stop are filled as well (and keep the stroke, which makes them 2 units bigger all
+// round with rounder corners). Slint fits the view box into the element less the stroke's width, so the view box
+// starts 1 unit in and the stroke is 1/12 of the size: the 24 units then span the whole element as in the browser,
+// and the stroke is 2 of them. chevron-left and chevron-right are 2.0's: 1.x's IconChevron (up and down only) turned a
+// quarter, the same 6-unit arms in the same stroke.
+export enum Glyph { none, play, pause, stop, plus, close, chevron-down, chevron-up, chevron-left, chevron-right, warn, clock }
+
+export component Icon inherits Path {
+    in property <Glyph> glyph;
+    in property <color> color;
+    property <bool> filled: glyph == Glyph.play || glyph == Glyph.pause || glyph == Glyph.stop;
+    width: 16px;
+    height: 16px;
+    viewbox-x: 1;
+    viewbox-y: 1;
+    viewbox-width: 22;
+    viewbox-height: 22;
+    fill: filled ? color : transparent;
+    stroke: color;
+    stroke-width: self.width / 12;
+    stroke-line-cap: round;
+    stroke-line-join: round;
+    commands: glyph == Glyph.play ? "M7 4.5v15l12-7.5z"
+        : glyph == Glyph.pause ? "M7 5h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM15 5h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"
+        : glyph == Glyph.stop ? "M8 6h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"
+        : glyph == Glyph.plus ? "M12 5v14M5 12h14"
+        : glyph == Glyph.close ? "M6 6l12 12M18 6L6 18"
+        : glyph == Glyph.chevron-down ? "M6 9l6 6 6-6"
+        : glyph == Glyph.chevron-up ? "M6 15l6-6 6 6"
+        : glyph == Glyph.chevron-left ? "M15 6l-6 6 6 6"
+        : glyph == Glyph.chevron-right ? "M9 6l6 6-6 6"
+        : glyph == Glyph.warn ? "M12 4l9.5 16h-19zM12 10v4.5M12 17.5v.5"
+        : glyph == Glyph.clock ? "M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0M12 6v6l4 2"
+        : "M0 0";
+}
+
+// Text with a CSS line height: `line-height` times the font size from one line to the next (base.css `body {
+// line-height: 1.45 }`, which 1.x's text inherits). Slint's `line-height-factor` multiplies the font's own line
+// height, which differs from font to font, so the factor is the CSS line height over that one, measured by an
+// invisible one-line probe in the same font drawn 1000 times as tall (a text's height comes in whole pixels, so the
+// measure is good to 1/1000 px).
+// The probe is a child of the text, out of every layout; the text itself is what a layout sizes, so it wraps to the
+// width the layout gives it, inside a FlexboxLayout too.
+export component Para inherits Text {
+    in property <float> line-height: 1.45;
+    font-size: Theme.font-size-base;
+    color: Theme.text;
+    wrap: word-wrap;
+    line-height-factor: probe.preferred-height > 0 ? root.line-height * root.font-size / (probe.preferred-height / 1000) : 1;
+
+    probe := Text {
+        x: 0;
+        y: 0;
+        width: 0;
+        height: 0;
+        visible: false;
+        accessible-role: none;
+        text: "X";
+        font-family: root.font-family;
+        font-size: root.font-size;
+        font-weight: root.font-weight;
+        line-height-factor: 1000;
+    }
+}
+
+// One CSS box-shadow, drawn as rings around the box it is placed in (it takes the box's size): the ring of `e`
+// covers the distances from `e - step` to `e` px outside the shadow's own box (the box moved down by `dy`), in
+// `color` at alpha `a`, the mean there of the blurred edge (a Gaussian of sigma = blur / 2, as CSS defines the
+// blur). What lies under the box is covered by it. Slint's software renderer does not draw `drop-shadow-*` (its
+// draw_box_shadow is empty in 1.18.1), so the rings are how the shadow is drawn by every renderer, and like the
+// browser's.
+component ShadowRings {
+    in property <length> radius;
+    in property <length> dy;
+    in property <length> step: 1px;
+    in property <color> color;
+    in property <[{e: float, a: float}]> rings;
+    for ring in root.rings: Rectangle {
+        x: -ring.e * 1px;
+        y: root.dy - ring.e * 1px;
+        width: root.width + 2 * ring.e * 1px;
+        height: root.height + 2 * ring.e * 1px;
+        border-radius: Math.max(0px, root.radius + ring.e * 1px);
+        border-width: root.step;
+        border-color: root.color.with-alpha(ring.a);
+    }
+}
+
+// ui.css `--shadow`: `0 1px 2px` of the text colour at 10 % over `0 2px 8px` of it at 6 % (the first shadow on top).
+// The rings: alpha x mean of 1 - Phi(d / sigma) over each ring, d the distance outside the shadow's box. The rows
+// under a card on the Light background come out #dadbdf, #e3e4e8, #eaebee, #edeef0 (1.x: #dadbde, #e7e8ea, #edeef0,
+// #eeeff1); in the dark themes the text colour is light, so the shadow is too, as in 1.x.
+export component Shadow {
+    in property <length> radius;
+    ShadowRings {
+        width: 100%;
+        height: 100%;
+        radius: root.radius;
+        dy: 2px;
+        color: Theme.text;
+        rings: [
+            { e: -1, a: 0.0387 },
+            { e: 0, a: 0.0330 },
+            { e: 1, a: 0.0270 },
+            { e: 2, a: 0.0213 },
+            { e: 3, a: 0.0160 },
+            { e: 4, a: 0.0115 },
+            { e: 5, a: 0.0079 },
+            { e: 6, a: 0.0051 },
+            { e: 7, a: 0.0032 },
+            { e: 8, a: 0.0018 },
+        ];
+    }
+    ShadowRings {
+        width: 100%;
+        height: 100%;
+        radius: root.radius;
+        dy: 1px;
+        color: Theme.text;
+        rings: [{ e: 0, a: 0.0684 }, { e: 1, a: 0.0316 }, { e: 2, a: 0.0075 }];
+    }
+}
+
+// ui.css `--shadow-lg`: `0 8px 32px` of the text colour at 24 % (the notice), in rings of 2 px.
+export component ShadowLarge {
+    in property <length> radius;
+    ShadowRings {
+        width: 100%;
+        height: 100%;
+        radius: root.radius;
+        dy: 8px;
+        step: 2px;
+        color: Theme.text;
+        rings: [
+            { e: -6, a: 0.1606 },
+            { e: -4, a: 0.1494 },
+            { e: -2, a: 0.1378 },
+            { e: 0, a: 0.1260 },
+            { e: 2, a: 0.1140 },
+            { e: 4, a: 0.1022 },
+            { e: 6, a: 0.0906 },
+            { e: 8, a: 0.0794 },
+            { e: 10, a: 0.0689 },
+            { e: 12, a: 0.0590 },
+            { e: 14, a: 0.0500 },
+            { e: 16, a: 0.0419 },
+            { e: 18, a: 0.0346 },
+            { e: 20, a: 0.0282 },
+            { e: 22, a: 0.0228 },
+            { e: 24, a: 0.0181 },
+            { e: 26, a: 0.0142 },
+            { e: 28, a: 0.0110 },
+            { e: 30, a: 0.0084 },
+            { e: 32, a: 0.0063 },
+            { e: 34, a: 0.0047 },
+            { e: 36, a: 0.0035 },
+            { e: 38, a: 0.0025 },
+            { e: 40, a: 0.0018 },
+        ];
+    }
+}
+
+// A 2 px focus ring 2 px outside the element of `size` it is placed in (base.css `:focus-visible`), shown for
+// keyboard focus only.
+export component FocusRing inherits Rectangle {
+    in property <length> radius;
+    in property <length> around-width;
+    in property <length> around-height;
+    x: -4px;
+    y: -4px;
+    width: root.around-width + 8px;
+    height: root.around-height + 8px;
+    border-width: 2px;
+    border-color: Theme.focus;
+    border-radius: root.radius + 4px;
+}
+
+// What makes a FocusScope a 1.x <button> for the keyboard and a screen reader (Btn, IconButton, LinkButton, the tabs,
+// the day chips, the level switch): the default action activates it, and so does Enter on the way down (a held key
+// once). Space does too, or with `space-on-release` on the way up after it went down here, as on a native button
+// (Btn, IconButton); `space-activates: false` leaves Space alone (TimerButton, PARITY 85, 382). Nothing activates
+// while `acts` is false: `enabled`, unless the control says otherwise (IconButton, Btn). `keyboard-focus`: the focus
+// came by Tab, so the control shows its focus ring.
+export component KeyActivate inherits FocusScope {
+    in property <bool> acts: root.enabled;
+    in property <bool> space-activates: true;
+    in property <bool> space-on-release;
+    out property <bool> keyboard-focus;
+    property <bool> space-down;
+    callback activated();
+
+    accessible-action-default => {
+        if (root.acts) {
+            root.activated();
+        }
+    }
+    focus-gained(reason) => {
+        root.keyboard-focus = reason == FocusReason.tab-navigation;
+    }
+    focus-lost(reason) => {
+        root.keyboard-focus = false;
+        root.space-down = false;
+    }
+    key-pressed(event) => {
+        if (event.text == Key.Return || (event.text == Key.Space && root.space-activates && !root.space-on-release)) {
+            if (!event.repeat && root.acts) {
+                root.activated();
+            }
+            return accept;
+        }
+        if (event.text == Key.Space && root.space-activates) {
+            root.space-down = true;
+            return accept;
+        }
+        reject
+    }
+    key-released(event) => {
+        if (event.text == Key.Space && root.space-activates && root.space-on-release) {
+            if (root.space-down && root.acts) {
+                root.space-down = false;
+                root.activated();
+            }
+            return accept;
+        }
+        reject
+    }
+}
+
+// A 1.x `.btn`: a click, Enter or Space activates it, as a native button does (Enter on the way down, Space on the
+// way up). `small` is `.btn-small`, `primary` is `.btn-primary`. `on: false` is `:disabled`; `why` says why. `on`,
+// not FocusScope's `enabled`, for the reason IconButton gives: a timer button that turns itself off under the
+// keyboard's focus (Enter on Pause) must still hear the focus leave, or it keeps its focus ring after Tab moves on.
+// Turned off under the focus, it keeps the focus (and its ring) until Tab or a click moves it; off, it is out of the
+// Tab order, a click does not focus it, and nothing activates it.
+export component Btn inherits KeyActivate {
+    in property <string> text;
+    in property <Glyph> glyph: Glyph.none;
+    in property <bool> primary;
+    in property <bool> small;
+    in property <string> why;
+    in property <bool> on: true;
+    property <color> fg: !root.on && root.primary ? Theme.text-muted : root.primary ? Theme.on-accent : Theme.text;
+
+    acts: root.on;
+    space-on-release: true;
+    focus-on-click: root.on;
+    focus-on-tab-navigation: root.on;
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-enabled: root.on;
+    accessible-description: root.on ? "" : root.why;
+
+    min-height: root.small ? 28px : 34px;
+    min-width: content.min-width;
+    preferred-width: content.preferred-width;
+
+    frame := Rectangle {
+        border-radius: Theme.radius-sm;
+        border-width: 1px;
+        border-color: root.primary ? (root.on ? Theme.accent : Theme.border) : Theme.border-strong;
+        background: root.primary
+            ? (!root.on ? Theme.surface-alt
+                : touch.pressed ? Theme.text.mix(Theme.accent, 0.20)
+                : touch.has-hover ? Theme.text.mix(Theme.accent, 0.12)
+                : Theme.accent)
+            : (!root.on ? Theme.surface
+                : touch.pressed ? Theme.text.mix(Theme.surface, 0.12)
+                : touch.has-hover ? Theme.text.mix(Theme.surface, 0.06)
+                : Theme.surface);
+        opacity: root.on ? 1 : root.primary ? 0.75 : 0.5;
+    }
+
+    content := HorizontalLayout {
+        alignment: center;
+        spacing: root.small ? 5px : 7px;
+        padding-left: root.small ? 4px : 14px;
+        padding-right: root.small ? 4px : 14px;
+        padding-top: root.small ? 3px : 6px;
+        padding-bottom: root.small ? 3px : 6px;
+        opacity: root.on ? 1 : root.primary ? 0.75 : 0.5;
+
+        if root.glyph != Glyph.none: VerticalLayout {
+            alignment: center;
+            Icon {
+                glyph: root.glyph;
+                color: root.fg;
+            }
+        }
+        Text {
+            text: root.text;
+            color: root.fg;
+            font-size: root.small ? 13px : Theme.font-size-base;
+            font-weight: 500;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: root.on ? MouseCursor.pointer : MouseCursor.not-allowed;
+        // A press focuses the button, as a click leaves a browser button focused (TimerButton.tsx).
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && root.on) {
+                root.focus();
+            }
+        }
+        clicked => {
+            if (root.on) {
+                root.activated();
+            }
+        }
+    }
+
+    if root.has-focus && root.keyboard-focus: FocusRing {
+
+        around-width: root.width;
+
+        around-height: root.height;
+        radius: Theme.radius-sm;
+    }
+}
+
+// A button that is only an icon (ui.css `.icon-btn`): 30 px square, no frame, the icon in the muted text colour. Hover
+// lays `--hover` under it (the text colour at 7 %) and turns the icon to the text colour, a press `--press` (13 %),
+// both ui.css tokens. A click, Enter or Space activates it, as Btn (Enter on the way down, Space on the way up), and a
+// press focuses it. `on: false` is `:disabled` as 1.x dims a disabled control (`.btn:disabled`): at half opacity, the
+// not-allowed cursor, no hover, out of the Tab order, and it does nothing. `label` is its accessible name.
+// `on`, not FocusScope's `enabled`: Slint ignores every focus event of a disabled FocusScope, so a button turned off
+// while it has the focus would never hear the focus leave and would keep its focus ring after Tab moved on (review F1).
+// Turned off under the focus, it keeps the focus (and its ring) until Tab or a click moves it.
+export component IconButton inherits KeyActivate {
+    in property <Glyph> glyph;
+    in property <string> label;
+    in property <bool> on: true;
+
+    acts: root.on;
+    space-on-release: true;
+    focus-on-click: root.on;
+    focus-on-tab-navigation: root.on;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: root.on;
+
+    width: 30px;
+    height: 30px;
+
+    face := Rectangle {
+        border-radius: Theme.radius-sm;
+        background: !root.on ? transparent
+            : touch.pressed ? Theme.text.with-alpha(0.13)
+            : touch.has-hover ? Theme.text.with-alpha(0.07)
+            : transparent;
+        opacity: root.on ? 1 : 0.5;
+        Icon {
+            glyph: root.glyph;
+            color: root.on && touch.has-hover ? Theme.text : Theme.text-muted;
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: root.on ? MouseCursor.pointer : MouseCursor.not-allowed;
+        // A press focuses the button, as a click leaves a browser button focused (TimerButton.tsx).
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && root.on) {
+                root.focus();
+            }
+        }
+        clicked => {
+            if (root.on) {
+                root.activated();
+            }
+        }
+    }
+    if root.has-focus && root.keyboard-focus: FocusRing {
+        around-width: root.width;
+        around-height: root.height;
+        radius: Theme.radius-sm;
+    }
+}
+
+// The button of anything that starts, pauses, resumes or stops a timer (1.x components/TimerButton.tsx). It never
+// reacts to Space, pressed, held or released: the app is used with the mouse, a click leaves the button focused, and a
+// Space pressed later for something else must not press it again. A click and Enter work as on any other button.
+export component TimerButton inherits Btn {
+    small: true;
+    space-activates: false;
+}
+
+// A text button that looks like a link (ui.css `.link`).
+export component LinkButton inherits KeyActivate {
+    in property <string> text;
+    in property <bool> expandable;
+    in property <bool> expanded;
+
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-expandable: root.expandable;
+    accessible-expanded: root.expanded;
+
+    min-width: row.min-width;
+    preferred-width: row.preferred-width;
+    min-height: row.min-height;
+
+    row := HorizontalLayout {
+        spacing: 4px;
+        label := Text {
+            text: root.text;
+            color: Theme.accent;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+        if root.expandable: VerticalLayout {
+            alignment: center;
+            Icon {
+                glyph: root.expanded ? Glyph.chevron-up : Glyph.chevron-down;
+                color: Theme.accent;
+            }
+        }
+    }
+    // The underline (text-underline-offset 2px; 2px thick on hover).
+    Rectangle {
+        x: 0;
+        y: label.y + label.height - 1px;
+        width: label.width;
+        height: touch.has-hover ? 2px : 1px;
+        background: Theme.accent;
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down) {
+                root.focus();
+            }
+        }
+        clicked => {
+            root.activated();
+        }
+    }
+    if root.has-focus && root.keyboard-focus: FocusRing {
+        around-width: root.width;
+        around-height: root.height;
+        radius: 3px;
+    }
+}
+
+// ui.css `.badge` with its tones: 0 neutral, 1 accent, 2 warning, 3 danger, 4 success. As tall as its CSS box: a
+// line of 12 px x 1.45, 1 px padding and a 1 px border above and below (21.4 px), on whole pixels as a browser paints
+// it, so what follows stays on whole pixels too.
+export component Badge inherits Rectangle {
+    in property <string> text;
+    in property <int> tone;
+    property <color> ink: tone == 1 ? Theme.accent : tone == 2 ? Theme.warning : tone == 3 ? Theme.danger : tone == 4 ? Theme.success : Theme.text-muted;
+    background: Theme.surface;
+    border-width: 1px;
+    border-color: tone == 0 ? Theme.border-strong : root.ink;
+    border-radius: self.height / 2;
+    min-width: label.preferred-width + 18px;
+    height: 21px;
+    label := Text {
+        text: root.text;
+        color: root.ink;
+        font-size: 12px;
+        font-weight: 600;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// ui.css `.chip`: a project in its colour, text in black or white, whichever reads better (ProjectChip). As tall as
+// its CSS box: a line of 12.5 px x 1.5 and 2 px padding above and below (22.75 px), on whole pixels.
+export component ProjectChip inherits Rectangle {
+    in property <string> name;
+    in property <color> tint;
+    in property <color> text-color;
+    in property <bool> archived;
+    background: root.tint;
+    border-radius: self.height / 2;
+    border-width: 1px;
+    border-color: Theme.text.with-alpha(0.22);
+    height: 23px;
+    min-width: row.min-width;
+    preferred-width: row.preferred-width;
+    row := HorizontalLayout {
+        padding-left: 9px;
+        padding-right: 9px;
+        spacing: 6px;
+        Text {
+            text: root.name;
+            color: root.text-color;
+            font-size: 12.5px;
+            font-weight: 600;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        if root.archived: Text {
+            text: "archived";
+            color: root.text-color;
+            font-size: 11px;
+            font-weight: 500;
+            opacity: 0.85;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// tasksP2.css `.tag-chip`: a line of 12 px x 1.5 and 1 px padding above and below: 20 px.
+export component TagChip inherits Rectangle {
+    in property <string> name;
+    in property <color> tint;
+    in property <color> text-color;
+    background: root.tint;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: Theme.text.with-alpha(0.25);
+    height: 20px;
+    min-width: label.min-width + 16px;
+    preferred-width: label.preferred-width + 16px;
+    label := Text {
+        x: 8px;
+        width: parent.width - 16px;
+        text: root.name;
+        color: root.text-color;
+        font-size: 12px;
+        font-weight: 600;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+}
+
+// ui.css `.card` and the Timeline cards: surface, 1 px border, radius, and the soft shadow (`--shadow`) under it.
+// The shadow comes first, the card's face over it, then the card's own children.
+export component Card inherits Rectangle {
+    in property <length> radius: Theme.radius;
+    Shadow {
+        width: 100%;
+        height: 100%;
+        radius: root.radius;
+    }
+    Rectangle {
+        background: Theme.surface;
+        border-width: 1px;
+        border-color: Theme.border;
+        border-radius: root.radius;
+    }
+}
+
+// Parallel diagonal lines over the element they are sized to, for patterns clipped by it (timeline.css `.block-live`,
+// `.k-billablePause`). `lines` is an SVG path in pixels (src/convert.rs) that reaches past the element: the view box
+// is the element's own size, one unit a pixel, and what lies outside it is still drawn. (The element itself must stay
+// inside the window: the software renderer skips a path whose element reaches past the window's edge.)
+export component Lines inherits Path {
+    in property <string> lines;
+    in property <color> color;
+    in property <length> thickness;
+    x: 0;
+    y: 0;
+    viewbox-width: Math.max(1, self.width / 1px);
+    viewbox-height: Math.max(1, self.height / 1px);
+    commands: root.lines;
+    stroke: root.color;
+    stroke-width: root.thickness;
+    fill: transparent;
+}

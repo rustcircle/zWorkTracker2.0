@@ -1,0 +1,725 @@
+{
+  "comment": "patch_task's compare-and-swap, run against both the Rust core and the IPC mock, so the two cannot drift apart. @A, @B, @C and @ARCHIVED stand for project ids. Each case starts from `stored`.",
+  "stored": {
+    "name": "Stored",
+    "projectId": "@A",
+    "description": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Stored text"
+            }
+          ]
+        }
+      ]
+    },
+    "tags": [
+      "tag-admin",
+      "tag-concept"
+    ]
+  },
+  "cases": [
+    {
+      "name": "no expected value: last writer wins",
+      "patch": {
+        "name": "Mine",
+        "projectId": "@B",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": [
+          "tag-revision"
+        ]
+      },
+      "conflicts": [],
+      "after": {
+        "name": "Mine",
+        "projectId": "@B",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": [
+          "tag-revision"
+        ]
+      }
+    },
+    {
+      "name": "every expected value still stored: all go",
+      "patch": {
+        "name": "Mine",
+        "projectId": "@B",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": [
+          "tag-revision"
+        ]
+      },
+      "expected": {
+        "name": "Stored",
+        "projectId": "@A",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Stored text"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": [
+          "tag-admin",
+          "tag-concept"
+        ]
+      },
+      "conflicts": [],
+      "after": {
+        "name": "Mine",
+        "projectId": "@B",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": [
+          "tag-revision"
+        ]
+      }
+    },
+    {
+      "name": "stale name refused, the rest goes",
+      "patch": {
+        "name": "Mine",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "name": "Older",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Stored text"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "conflicts": [
+        "name"
+      ],
+      "after": {
+        "name": "Stored",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "stale project refused, the rest goes",
+      "patch": {
+        "name": "Mine",
+        "projectId": "@B"
+      },
+      "expected": {
+        "name": "Stored",
+        "projectId": "@C"
+      },
+      "conflicts": [
+        "project"
+      ],
+      "after": {
+        "name": "Mine",
+        "projectId": "@A"
+      }
+    },
+    {
+      "name": "stale description refused, the rest goes",
+      "patch": {
+        "name": "Mine",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "name": "Stored",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "What the editor showed"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "conflicts": [
+        "description"
+      ],
+      "after": {
+        "name": "Mine",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Stored text"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "stale tags refused, the rest goes",
+      "patch": {
+        "name": "Mine",
+        "tags": [
+          "tag-revision"
+        ]
+      },
+      "expected": {
+        "name": "Stored",
+        "tags": [
+          "tag-admin"
+        ]
+      },
+      "conflicts": [
+        "tags"
+      ],
+      "after": {
+        "name": "Mine",
+        "tags": [
+          "tag-admin",
+          "tag-concept"
+        ]
+      }
+    },
+    {
+      "name": "all four stale",
+      "patch": {
+        "name": "Mine",
+        "projectId": "@B",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": [
+          "tag-revision"
+        ]
+      },
+      "expected": {
+        "name": "Older",
+        "projectId": "@C",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "What the editor showed"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": []
+      },
+      "conflicts": [
+        "name",
+        "project",
+        "description",
+        "tags"
+      ],
+      "after": {
+        "name": "Stored",
+        "projectId": "@A",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Stored text"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": [
+          "tag-admin",
+          "tag-concept"
+        ]
+      }
+    },
+    {
+      "name": "tags are a set: another order in expected is no change",
+      "patch": {
+        "tags": [
+          "tag-revision"
+        ]
+      },
+      "expected": {
+        "tags": [
+          "tag-concept",
+          "tag-admin"
+        ]
+      },
+      "conflicts": [],
+      "after": {
+        "tags": [
+          "tag-revision"
+        ]
+      }
+    },
+    {
+      "name": "a description is compared by value, not by the order of its keys",
+      "patch": {
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "description": {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "Stored text",
+                  "type": "text"
+                }
+              ],
+              "type": "paragraph"
+            }
+          ],
+          "type": "doc"
+        }
+      },
+      "conflicts": [],
+      "after": {
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "stored already equals what is saved: success, whatever was expected",
+      "patch": {
+        "name": "Stored",
+        "projectId": "@A",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Stored text"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": [
+          "tag-concept",
+          "tag-admin"
+        ]
+      },
+      "expected": {
+        "name": "Older",
+        "projectId": "@C",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "What the editor showed"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": []
+      },
+      "conflicts": [],
+      "after": {
+        "name": "Stored",
+        "projectId": "@A",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Stored text"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a name is compared as it would be stored",
+      "patch": {
+        "name": "  Stored "
+      },
+      "expected": {
+        "name": "Older"
+      },
+      "conflicts": [],
+      "after": {
+        "name": "Stored"
+      }
+    },
+    {
+      "name": "null expects no description, and one is stored",
+      "patch": {
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "description": null
+      },
+      "conflicts": [
+        "description"
+      ],
+      "after": {
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Stored text"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "an expected value of a field not in the patch is no concern",
+      "patch": {
+        "name": "Mine"
+      },
+      "expected": {
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "What the editor showed"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": []
+      },
+      "conflicts": [],
+      "after": {
+        "name": "Mine",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Stored text"
+                }
+              ]
+            }
+          ]
+        },
+        "tags": [
+          "tag-admin",
+          "tag-concept"
+        ]
+      }
+    },
+    {
+      "name": "a blank name that would go is refused outright",
+      "patch": {
+        "name": "  ",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "name": "Stored"
+      },
+      "error": "validation",
+      "after": {
+        "name": "Stored",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Stored text"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a blank name with a stale expected value goes nowhere",
+      "patch": {
+        "name": "  ",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "name": "Older"
+      },
+      "conflicts": [
+        "name"
+      ],
+      "after": {
+        "name": "Stored",
+        "description": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "My words"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "an unknown project that would go is refused outright",
+      "patch": {
+        "projectId": "no-such-project"
+      },
+      "expected": {
+        "projectId": "@A"
+      },
+      "error": "not_found",
+      "after": {
+        "projectId": "@A"
+      }
+    },
+    {
+      "name": "an archived project that would go is refused outright",
+      "patch": {
+        "projectId": "@ARCHIVED"
+      },
+      "error": "validation",
+      "after": {
+        "projectId": "@A"
+      }
+    },
+    {
+      "name": "an archived project with a stale expected value goes nowhere",
+      "patch": {
+        "projectId": "@ARCHIVED"
+      },
+      "expected": {
+        "projectId": "@B"
+      },
+      "conflicts": [
+        "project"
+      ],
+      "after": {
+        "projectId": "@A"
+      }
+    }
+  ]
+}

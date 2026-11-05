@@ -1,0 +1,120 @@
+// The About screen: what 1.x shows in Settings > About (src/features/settings/OtherSections.tsx AboutSection), the
+// licence line, the third-party notices (THIRD_PARTY_NOTICES.md, embedded), and Slint's AboutSlint (PLAN.md 9). The
+// paragraphs keep 1.x's line height (widgets.slint `Para`).
+
+import { AboutSlint, ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Strings } from "strings.slint";
+import { AppState } from "state.slint";
+import { Card, LinkButton, Para } from "widgets.slint";
+
+export component AboutPanel inherits ScrollView {
+    in-out property <bool> notices-open;
+
+    VerticalLayout {
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-top: 18px;
+        padding-bottom: 40px;
+        spacing: 16px;
+        alignment: start;
+
+        Card {
+            accessible-role: groupbox;
+            accessible-label: Strings.nav-about;
+            VerticalLayout {
+                padding-left: 18px;
+                padding-right: 18px;
+                padding-top: 16px;
+                padding-bottom: 16px;
+                spacing: 12px;
+
+                Text {
+                    text: Strings.app-name;
+                    font-family: Theme.font-display;
+                    font-size: 18px;
+                    font-weight: Theme.font-weight-heading;
+                    color: Theme.text;
+                }
+                HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Text {
+                        text: Strings.about-app-version;
+                        font-size: 13px;
+                        font-weight: 600;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                    }
+                    Para {
+                        text: AppState.app-version;
+                        wrap: no-wrap;
+                        vertical-alignment: center;
+                    }
+                }
+                Para {
+                    text: Strings.about-zone-rules;
+                }
+                Para {
+                    text: Strings.about-privacy;
+                }
+                Para {
+                    text: Strings.about-licence.replace-all("{licence-file}", "LICENSE");
+                }
+                HorizontalLayout {
+                    alignment: start;
+                    LinkButton {
+                        text: Strings.about-notices-link;
+                        expandable: true;
+                        expanded: root.notices-open;
+                        activated => {
+                            root.notices-open = !root.notices-open;
+                        }
+                    }
+                }
+                if root.notices-open: Rectangle {
+                    height: 280px;
+                    background: Theme.surface-alt;
+                    border-radius: Theme.radius-sm;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    accessible-role: groupbox;
+                    accessible-label: Strings.about-notices-link;
+                    ScrollView {
+                        VerticalLayout {
+                            padding: 12px;
+                            Text {
+                                text: AppState.notices-text;
+                                font-family: Theme.font-mono;
+                                font-size: 12.5px;
+                                color: Theme.text;
+                                wrap: word-wrap;
+                                accessible-role: text;
+                                accessible-label: self.text;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Card {
+            VerticalLayout {
+                padding-left: 18px;
+                padding-right: 18px;
+                padding-top: 12px;
+                padding-bottom: 16px;
+                spacing: 8px;
+                HorizontalLayout {
+                    alignment: start;
+                    AboutSlint {
+                        width: 280px;
+                    }
+                }
+                Para {
+                    text: Strings.about-slint;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,64 @@
+{
+  "comment": "Checked by both Rust (z-work-core tests) and Vitest. Instants are UTC; offsets are minutes east.",
+  "conversions": [
+    { "zone": "America/New_York", "at": "2026-03-08T06:59:59Z", "day": "2026-03-08", "clock": "01:59", "offsetMin": -300 },
+    { "zone": "America/New_York", "at": "2026-03-08T07:00:00Z", "day": "2026-03-08", "clock": "03:00", "offsetMin": -240 },
+    { "zone": "America/New_York", "at": "2026-03-20T12:00:00Z", "day": "2026-03-20", "clock": "08:00", "offsetMin": -240 },
+    { "zone": "Europe/Lisbon", "at": "2026-03-20T12:00:00Z", "day": "2026-03-20", "clock": "12:00", "offsetMin": 0 },
+    { "zone": "Europe/Lisbon", "at": "2026-03-29T00:59:59Z", "day": "2026-03-29", "clock": "00:59", "offsetMin": 0 },
+    { "zone": "Europe/Lisbon", "at": "2026-03-29T01:00:00Z", "day": "2026-03-29", "clock": "02:00", "offsetMin": 60 },
+    { "zone": "America/New_York", "at": "2026-11-01T05:30:00Z", "day": "2026-11-01", "clock": "01:30", "offsetMin": -240 },
+    { "zone": "America/New_York", "at": "2026-11-01T06:30:00Z", "day": "2026-11-01", "clock": "01:30", "offsetMin": -300 },
+    { "zone": "Europe/Lisbon", "at": "2026-10-25T00:30:00Z", "day": "2026-10-25", "clock": "01:30", "offsetMin": 60 },
+    { "zone": "Europe/Lisbon", "at": "2026-10-25T01:30:00Z", "day": "2026-10-25", "clock": "01:30", "offsetMin": 0 },
+    { "zone": "America/Los_Angeles", "at": "2026-07-01T03:00:00Z", "day": "2026-06-30", "clock": "20:00", "offsetMin": -420 },
+    { "zone": "America/Phoenix", "at": "2026-07-01T03:00:00Z", "day": "2026-06-30", "clock": "20:00", "offsetMin": -420 },
+    { "zone": "America/Phoenix", "at": "2026-01-01T03:00:00Z", "day": "2025-12-31", "clock": "20:00", "offsetMin": -420 },
+    { "zone": "Pacific/Honolulu", "at": "2026-07-01T00:00:00Z", "day": "2026-06-30", "clock": "14:00", "offsetMin": -600 },
+    { "zone": "Asia/Kolkata", "at": "2026-07-01T18:29:59Z", "day": "2026-07-01", "clock": "23:59", "offsetMin": 330 },
+    { "zone": "Asia/Kolkata", "at": "2026-07-01T18:30:00Z", "day": "2026-07-02", "clock": "00:00", "offsetMin": 330 },
+    { "zone": "Asia/Kathmandu", "at": "2026-07-01T18:15:00Z", "day": "2026-07-02", "clock": "00:00", "offsetMin": 345 },
+    { "zone": "Australia/Sydney", "at": "2026-01-15T00:00:00Z", "day": "2026-01-15", "clock": "11:00", "offsetMin": 660 },
+    { "zone": "Australia/Sydney", "at": "2026-07-15T00:00:00Z", "day": "2026-07-15", "clock": "10:00", "offsetMin": 600 },
+    { "zone": "America/Santiago", "at": "2026-01-15T12:00:00Z", "day": "2026-01-15", "clock": "09:00", "offsetMin": -180 },
+    { "zone": "America/Santiago", "at": "2026-07-15T12:00:00Z", "day": "2026-07-15", "clock": "08:00", "offsetMin": -240 },
+    { "zone": "America/New_York", "at": "2006-03-20T12:00:00Z", "day": "2006-03-20", "clock": "07:00", "offsetMin": -300 },
+    { "zone": "America/New_York", "at": "2007-03-20T12:00:00Z", "day": "2007-03-20", "clock": "08:00", "offsetMin": -240 },
+    { "zone": "UTC", "at": "2026-07-01T00:00:00Z", "day": "2026-07-01", "clock": "00:00", "offsetMin": 0 }
+  ],
+  "days": [
+    { "zone": "America/New_York", "day": "2026-03-08", "start": "2026-03-08T05:00:00Z", "hours": 23 },
+    { "zone": "America/New_York", "day": "2026-11-01", "start": "2026-11-01T04:00:00Z", "hours": 25 },
+    { "zone": "Europe/Lisbon", "day": "2026-03-29", "start": "2026-03-29T00:00:00Z", "hours": 23 },
+    { "zone": "Europe/Lisbon", "day": "2026-10-25", "start": "2026-10-24T23:00:00Z", "hours": 25 },
+    { "zone": "America/Phoenix", "day": "2026-03-08", "start": "2026-03-08T07:00:00Z", "hours": 24 },
+    { "zone": "Asia/Kolkata", "day": "2026-03-08", "start": "2026-03-07T18:30:00Z", "hours": 24 },
+    { "zone": "America/Havana", "day": "2026-03-08", "start": "2026-03-08T05:00:00Z", "hours": 23 }
+  ],
+  "splits": [
+    {
+      "comment": "Crosses midnight in Lisbon but not in New York",
+      "zone": "Europe/Lisbon", "start": "2026-07-01T22:30:00Z", "end": "2026-07-01T23:30:00Z",
+      "pieces": [{ "day": "2026-07-01", "secs": 1800 }, { "day": "2026-07-02", "secs": 1800 }]
+    },
+    {
+      "zone": "America/New_York", "start": "2026-07-01T22:30:00Z", "end": "2026-07-01T23:30:00Z",
+      "pieces": [{ "day": "2026-07-01", "secs": 3600 }]
+    },
+    {
+      "comment": "Crossing the fall-back overlap: a real 3 hours although the clock moved 2",
+      "zone": "America/New_York", "start": "2026-11-01T05:00:00Z", "end": "2026-11-01T08:00:00Z",
+      "pieces": [{ "day": "2026-11-01", "secs": 10800 }]
+    },
+    {
+      "comment": "Midnight in India falls at 18:30 UTC",
+      "zone": "Asia/Kolkata", "start": "2026-07-01T18:00:00Z", "end": "2026-07-01T19:00:00Z",
+      "pieces": [{ "day": "2026-07-01", "secs": 1800 }, { "day": "2026-07-02", "secs": 1800 }]
+    },
+    {
+      "comment": "Midnight in Nepal falls at 18:15 UTC",
+      "zone": "Asia/Kathmandu", "start": "2026-07-01T18:00:00Z", "end": "2026-07-01T19:00:00Z",
+      "pieces": [{ "day": "2026-07-01", "secs": 900 }, { "day": "2026-07-02", "secs": 2700 }]
+    }
+  ]
+}

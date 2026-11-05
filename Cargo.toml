@@ -1,0 +1,76 @@
+[workspace]
+resolver = "3"
+members = ["crates/z-work-core", "crates/zwt-app", "crates/zwt-bridge", "crates/zwt-ui-logic"]
+
+[workspace.package]
+version = "2.0.0"
+edition = "2024"
+# The Rust this is built and tested with: rust-toolchain.toml follows stable, which was 1.99.1 when this was set.
+rust-version = "1.99"
+license = "MIT"
+authors = ["Pedro Miguel Rodrigues Jorge <pmrj@rustcircle.com>"]
+
+# Identical to the 1.x workspace the core was written in (src-tauri/Cargo.toml at a88c1aa), so the vendored
+# crates/z-work-core builds under the same lints, edition and rust-version.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+indexing_slicing = "warn"
+
+[workspace.dependencies]
+# Slint and its testing backend move together: the testing crate has no stability guarantee, so both stay on the
+# exact same version and are re-pinned in one commit. Features: see docs/DEPENDENCIES.md.
+slint = { version = "=1.18.1", default-features = false, features = [
+    "std",
+    "compat-1-2",
+    "backend-winit",
+    # FemtoVG on wgpu: Metal on macOS, Direct3D 12 or Vulkan on Windows, never OpenGL (owner, 2026-11-04;
+    # crates/zwt-app/src/renderer.rs).
+    "renderer-femtovg-wgpu",
+    "renderer-software",
+    "accessibility",
+    # `slint::winit_030::CustomApplicationHandler::exiting`: the worker pauses what runs when macOS quits the app
+    # inside AppKit's `terminate:` (Cmd+Q, Dock, log out), where `app.run()` never returns (review R1).
+    "unstable-winit-030",
+    # `BackendSelector::require_wgpu_30` with `slint::wgpu_30::WGPUSettings`, to pick the wgpu backends, and
+    # `GraphicsAPI::WGPU30`, to name the adapter that draws (renderer.rs).
+    "unstable-wgpu-30",
+] }
+slint-build = "=1.18.1"
+# `renderer-software` lets the testing backend render real pixels (Window::take_snapshot) for screenshots.
+i-slint-backend-testing = { version = "=1.18.1", features = ["renderer-software"] }
+# The same requirements as the core, so one version of each is built.
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+chrono-tz = "0.10"
+# PNG encoding for UI-test screenshots; the version the core already locks.
+png = "0.18"
+# Already locked: serde_json and thiserror 2 through the core, iana-time-zone through chrono's `clock` feature,
+# tempfile through the Slint graph. Adding them here adds edges to Cargo.lock, not packages.
+serde_json = "1"
+iana-time-zone = "0.1"
+thiserror = "2"
+tempfile = "3"
+# The data-folder guard compares names as APFS and NTFS would match them: NFKC (new) and full Unicode case folding
+# (unicase, already locked through Slint's pulldown-cmark) before any disk call (review R4).
+unicode-normalization = "0.1"
+unicase = "2"
+# SIGTERM, SIGINT and SIGHUP end the event loop like Quit, so the worker pauses what runs (review R1; Unix only).
+signal-hook = "0.4"
+# `ZWT_LOG=<level>` prints the log records of wgpu, naga and winit on stderr (renderer.rs). Already locked and built
+# through them; this adds an edge to Cargo.lock, not a package.
+log = "0.4"
+# The workspace's own crates. The core is vendored: copied from the 1.x repo at a88c1aa, edited here from now on
+# (docs/DEPENDENCIES.md).
+z-work-core = { path = "crates/z-work-core" }
+zwt-ui-logic = { path = "crates/zwt-ui-logic" }
+zwt-bridge = { path = "crates/zwt-bridge" }
+
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true

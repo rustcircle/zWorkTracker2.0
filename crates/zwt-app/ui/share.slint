@@ -1,0 +1,475 @@
+// The Share of time card: the level switch, the donut and its legend. After 1.x
+// src/features/analysis/{SectionsA.tsx (ShareOfTime), charts.tsx (Donut, ShareLegend)} and analysis.css.
+// In 1.x it is an Analysis card; milestone 1 puts it on the Timeline, over the week containing today.
+
+import { Theme } from "theme.slint";
+import { Strings } from "strings.slint";
+import { AppState, ShareArc, ShareRowData } from "state.slint";
+import { FocusRing, KeyActivate, Para } from "widgets.slint";
+
+// charts.tsx Donut: the box is 252 px (`.a-share-chart` flex basis), so R = clamp(252 / 2 - 6, 56, 120) = 120 and
+// the hole is 0.64 R.
+global Ring {
+    out property <float> box: 252;
+    out property <float> centre: 126;
+    out property <float> outer: 120;
+    out property <float> inner: 76.8;
+}
+
+// A ring segment between two radii, from `from-deg` to `to-deg` clockwise, 0 at the top. Drawn as two arcs of at most
+// 180 degrees each, so a slice of the whole ring is still a ring. Coordinates are pixels of the ring's box (`fit:
+// preserve`), so a stroked segment lies exactly on a filled one (a fitted path shrinks by its stroke's width).
+export component DonutSegment inherits Path {
+    in property <float> from-deg;
+    in property <float> to-deg;
+    in property <float> outer: Ring.outer;
+    in property <float> inner: Ring.inner;
+    property <angle> a0: (root.from-deg - 90) * 1deg;
+    property <angle> a1: (root.to-deg - 90) * 1deg;
+    property <angle> am: (root.a0 + root.a1) / 2;
+    x: 0;
+    y: 0;
+    width: Ring.box * 1px;
+    height: Ring.box * 1px;
+    fit: preserve;
+
+    MoveTo {
+        x: Ring.centre + root.outer * Math.cos(root.a0);
+        y: Ring.centre + root.outer * Math.sin(root.a0);
+    }
+    ArcTo {
+        x: Ring.centre + root.outer * Math.cos(root.am);
+        y: Ring.centre + root.outer * Math.sin(root.am);
+        radius-x: root.outer;
+        radius-y: root.outer;
+        sweep: true;
+        large-arc: false;
+    }
+    ArcTo {
+        x: Ring.centre + root.outer * Math.cos(root.a1);
+        y: Ring.centre + root.outer * Math.sin(root.a1);
+        radius-x: root.outer;
+        radius-y: root.outer;
+        sweep: true;
+        large-arc: false;
+    }
+    LineTo {
+        x: Ring.centre + root.inner * Math.cos(root.a1);
+        y: Ring.centre + root.inner * Math.sin(root.a1);
+    }
+    ArcTo {
+        x: Ring.centre + root.inner * Math.cos(root.am);
+        y: Ring.centre + root.inner * Math.sin(root.am);
+        radius-x: root.inner;
+        radius-y: root.inner;
+        sweep: false;
+        large-arc: false;
+    }
+    ArcTo {
+        x: Ring.centre + root.inner * Math.cos(root.a0);
+        y: Ring.centre + root.inner * Math.sin(root.a0);
+        radius-x: root.inner;
+        radius-y: root.inner;
+        sweep: false;
+        large-arc: false;
+    }
+    Close { }
+}
+
+// One slice (analysis.css `.a-slice`: a 2 px line in the card's colour between slices). A combination of tags is
+// striped diagonally with its tags' colours as 1.x's pattern draws it (charts.tsx `StripePattern`: 4 px a colour,
+// turned 45 degrees about the ring box's corner): the first colour under the whole slice, each other colour as the
+// pieces of its stripes, cut to the slice in Rust (zwt_ui_logic::stripes, written with the arcs by src/ui.rs; owner
+// decision 1). Its accessible name is the full path and the figure (PARITY 388).
+component Slice inherits Rectangle {
+    in property <ShareRowData> item;
+    in property <ShareArc> arc;
+    x: 0;
+    y: 0;
+    width: Ring.box * 1px;
+    height: Ring.box * 1px;
+    accessible-role: image;
+    accessible-label: root.item.full-path + ": " + root.item.text;
+
+    if root.item.stripes.length < 2: DonutSegment {
+        from-deg: root.arc.from;
+        to-deg: root.arc.to;
+        fill: root.item.other ? Theme.border-strong : root.item.color;
+        stroke: Theme.surface;
+        stroke-width: 2px;
+    }
+    if root.item.stripes.length >= 2: Rectangle {
+        // The first colour under the whole slice, the others' stripes over it: no seam between two stripes.
+        DonutSegment {
+            from-deg: root.arc.from;
+            to-deg: root.arc.to;
+            fill: root.item.stripes[0];
+        }
+        for c[i] in root.item.stripes: Path {
+            x: 0;
+            y: 0;
+            width: Ring.box * 1px;
+            height: Ring.box * 1px;
+            fit: preserve;
+            commands: root.arc.stripes[i];
+            fill: c;
+            visible: i > 0;
+        }
+        DonutSegment {
+            from-deg: root.arc.from;
+            to-deg: root.arc.to;
+            fill: transparent;
+            stroke: Theme.surface;
+            stroke-width: 2px;
+        }
+    }
+}
+
+// A segment of the level switch (analysis.css `.a-seg-btn`): a radio button.
+component LevelButton inherits KeyActivate {
+    in property <string> text;
+    in property <bool> on;
+    in property <bool> first;
+    in property <bool> last;
+    in property <string> why;
+
+    accessible-role: radio-button;
+    accessible-checkable: true;
+    accessible-checked: root.on;
+    accessible-label: root.text;
+    accessible-enabled: root.enabled;
+    accessible-description: root.enabled ? "" : root.why;
+
+    min-height: 30px;
+    min-width: label.preferred-width + 24px;
+    preferred-width: label.preferred-width + 24px;
+
+    // The switch's outer corners are rounded; the segments at its ends round theirs to match.
+    Rectangle {
+        background: root.on ? Theme.accent : Theme.surface;
+        border-top-left-radius: root.first ? 7px : 0;
+        border-bottom-left-radius: root.first ? 7px : 0;
+        border-top-right-radius: root.last ? 7px : 0;
+        border-bottom-right-radius: root.last ? 7px : 0;
+    }
+    label := Text {
+        text: root.text;
+        color: root.on ? Theme.on-accent : Theme.text;
+        font-weight: root.on ? 600 : 400;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        opacity: root.enabled ? 1 : 0.5;
+    }
+    if !root.last: Rectangle {
+        x: parent.width - 1px;
+        width: 1px;
+        background: Theme.border;
+    }
+    touch := TouchArea {
+        mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.not-allowed;
+        clicked => {
+            if (root.enabled) {
+                root.activated();
+            }
+        }
+    }
+    if root.has-focus && root.keyboard-focus: FocusRing {
+        around-width: root.width;
+        around-height: root.height;
+        radius: 2px;
+    }
+}
+
+// Projects / Tasks / Subtasks / Tags (analysis.css `.a-seg`). Shows the level drawn; Subtasks is off while no time
+// is on a subtask. Picking one sends SetShareLevel; the pick stays until the user picks another (PARITY 212).
+component LevelSwitch inherits Rectangle {
+    border-radius: 8px;
+    accessible-role: radio-group;
+    accessible-label: Strings.share-by-label;
+    HorizontalLayout {
+        padding: 1px;
+        LevelButton {
+            first: true;
+            text: Strings.share-level-projects;
+            on: AppState.share-shown == 0;
+            activated => {
+                AppState.set-share-level(0);
+            }
+        }
+        LevelButton {
+            text: Strings.share-level-tasks;
+            on: AppState.share-shown == 1;
+            activated => {
+                AppState.set-share-level(1);
+            }
+        }
+        LevelButton {
+            text: Strings.share-level-subtasks;
+            on: AppState.share-shown == 2;
+            enabled: AppState.share-subtasks-available;
+            why: Strings.share-no-subtask-time;
+            activated => {
+                AppState.set-share-level(2);
+            }
+        }
+        LevelButton {
+            text: Strings.share-level-tags;
+            on: AppState.share-shown == 3;
+            last: true;
+            activated => {
+                AppState.set-share-level(3);
+            }
+        }
+    }
+    // The border over the segments, so their backgrounds never cover it.
+    Rectangle {
+        border-width: 1px;
+        border-color: Theme.border-strong;
+        border-radius: 8px;
+    }
+}
+
+// The swatch of a legend row (`.a-share-swatch`): the slice's colour, or the diagonal stripes of a combination
+// (charts.tsx `stripesBackground`: a 135deg gradient of 3 px a colour from the corner inside the 1 px border): the
+// first colour under the whole swatch, each other colour's stripes over it, cut in Rust (src/convert.rs).
+component Swatch inherits Rectangle {
+    in property <ShareRowData> item;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    clip: true;
+    background: root.item.other ? Theme.border-strong : root.item.stripes.length >= 2 ? root.item.stripes[0] : root.item.color;
+    for c[i] in root.item.stripes: Path {
+        x: 0;
+        y: 0;
+        width: 12px;
+        height: 12px;
+        fit: preserve;
+        commands: root.item.swatch-stripes[i];
+        fill: c;
+        visible: i > 0;
+    }
+    Rectangle {
+        border-width: 1px;
+        border-color: Theme.border-strong;
+        border-radius: 3px;
+    }
+}
+
+// One legend row (`.a-share-legend li`): swatch, name with what the data leaves open after it, hours, percentage.
+// As tall as its CSS box: a line of 13 px x 1.45 and 4 px of padding above and below (26.85 px, on whole pixels).
+// The name and what follows it are one line, as in 1.x (`.a-share-name`, charts.tsx ShareLegend): the name keeps its
+// width (no stretch) and what follows it is one muted text that gives way first (stretch 1, down to nothing), so a
+// row too narrow for it all is cut once, at the end, and the name only when it alone is wider than its column
+// (review V2-SS1).
+component LegendRow inherits Rectangle {
+    in property <ShareRowData> item;
+    border-radius: 8px;
+    height: 27px;
+    accessible-role: list-item;
+    accessible-label: root.item.spoken + ", " + root.item.text;
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        spacing: 9px;
+        // In the middle of the line's 18.85 px as 1.x paints it: 3 px down, so on a whole pixel.
+        VerticalLayout {
+            alignment: start;
+            padding-top: 3px;
+            Swatch {
+                item: root.item;
+            }
+        }
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            spacing: 0;
+            Text {
+                text: root.item.label;
+                color: Theme.text;
+                font-size: 13px;
+                overflow: elide;
+                horizontal-stretch: 0;
+                vertical-alignment: center;
+            }
+            if root.item.context != "": Text {
+                text: root.item.context;
+                color: Theme.text-muted;
+                font-size: 13px;
+                overflow: elide;
+                horizontal-stretch: 1;
+                min-width: 0;
+                vertical-alignment: center;
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+        }
+        Text {
+            width: 64px;
+            text: root.item.hm;
+            color: Theme.text;
+            font-size: 13px;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+        Text {
+            width: 52px;
+            text: root.item.pct;
+            color: Theme.text;
+            font-size: 13px;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// The card (analysis.css `.a-card`, `.a-share`): title and period, the level switch, then the donut with its
+// legend beside it.
+export component ShareCard inherits Rectangle {
+    // The width the card is given, from outside its content (the panel's visible width): what the card's own width
+    // cannot be used for, as the legend's width feeds back into it.
+    in property <length> room: 10000px;
+    // The donut and the legend fit side by side (analysis.css `.a-share`: 252 px, 28 px of gap, the legend at least
+    // 280 px) inside the card's 16 px of padding.
+    property <bool> side-by-side: root.room - 32px >= Ring.box * 1px + 28px + 280px;
+    background: Theme.surface;
+    border-width: 1px;
+    border-color: Theme.border;
+    border-radius: 12px;
+    accessible-role: groupbox;
+    accessible-label: Strings.share-title;
+
+    VerticalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 14px;
+        padding-bottom: 14px;
+        spacing: 8px;
+
+        HorizontalLayout {
+            spacing: 10px;
+            Text {
+                text: Strings.share-title;
+                font-family: Theme.font-display;
+                font-size: 14px;
+                font-weight: Theme.font-weight-heading;
+                color: Theme.text;
+                vertical-alignment: center;
+            }
+            Text {
+                text: AppState.share-period;
+                font-size: 12.5px;
+                color: Theme.text-muted;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+        }
+        HorizontalLayout {
+            padding-bottom: 2px;
+            alignment: start;
+            LevelSwitch { }
+        }
+
+        // An `if` element is as tall as its layout measures it, and Slint (1.18) measures it at its own preferred width,
+        // not at the width the layout then gives it: what wraps at the card's width was measured unwrapped, the card left
+        // the rest out of its height and it was drawn below the card's border (fix loop V2: the legend below the donut,
+        // this message on two lines, in a 960 px window). So each `if` takes the height of the layout inside it, which
+        // that layout measures at its own width: the width the card gives it.
+        if AppState.share-rows.length == 0: Rectangle {
+            height: message.preferred-height;
+            background: Theme.surface-alt;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: Theme.border-strong;
+            message := VerticalLayout {
+                padding: 28px;
+                Para {
+                    text: Strings.share-empty;
+                    color: Theme.text-muted;
+                    horizontal-alignment: center;
+                }
+            }
+        }
+        // analysis.css `.a-share`: the donut (252 px) and the legend (at least 280 px) side by side, the legend wrapping
+        // below when the card is narrow (PARITY 208), where the donut is centred (`margin-inline: auto`) and the legend
+        // takes the card's width. Side by side on the wide Timeline card, the legend is no wider than in 1.x's
+        // Analysis card (420 px less 16 px of padding each side), so the figures stay near the names (owner
+        // decision 8).
+        if AppState.share-rows.length > 0: Rectangle {
+            height: flex.preferred-height;
+            flex := FlexboxLayout {
+                spacing-horizontal: 28px;
+                spacing-vertical: 12px;
+                alignment: root.side-by-side ? LayoutAlignment.start : LayoutAlignment.center;
+                cross-axis-alignment: center;
+                donut := Rectangle {
+                    horizontal-stretch: 0;
+                    width: Ring.box * 1px;
+                    height: Ring.box * 1px;
+                    accessible-role: image;
+                    accessible-label: Strings.share-donut-label.replace-all("{noun}", AppState.share-shown == 0 ? Strings.share-noun-project : AppState.share-shown == 1 ? Strings.share-noun-task : AppState.share-shown == 2 ? Strings.share-noun-subtask : Strings.share-noun-tag);
+                    for row[i] in AppState.share-rows: Slice {
+                        item: row;
+                        arc: AppState.share-arcs[i];
+                    }
+                    Text {
+                        y: Ring.centre * 1px - 22px;
+                        width: parent.width;
+                        text: AppState.share-total-text;
+                        color: Theme.text;
+                        font-size: 20px;
+                        font-weight: 650;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        y: Ring.centre * 1px + 5px;
+                        width: parent.width;
+                        text: Strings.share-centre-exact;
+                        color: Theme.text-muted;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 1;
+                    spacing: 1px;
+                    min-width: 280px;
+                    // The flex breaks its lines at this width: beside the donut it is what is left of the card's
+                    // content, up to 388 px, so the legend stays beside the donut wherever `side-by-side` holds (at
+                    // 388 px it wrapped below the donut on a card whose content is 560 to 667 px wide).
+                    preferred-width: root.side-by-side ? min(388px, root.room - 32px - Ring.box * 1px - 28px) : root.room - 32px;
+                    max-width: root.side-by-side ? 388px : root.room - 32px;
+                    accessible-role: list;
+                    accessible-label: Strings.share-legend-label.replace-all("{level}", (AppState.share-shown == 0 ? Strings.share-level-projects : AppState.share-shown == 1 ? Strings.share-level-tasks : AppState.share-shown == 2 ? Strings.share-level-subtasks : Strings.share-level-tags).to-lowercase());
+                    for row in AppState.share-rows: LegendRow {
+                        item: row;
+                    }
+                    // analysis.css `.a-share-footnote` (6 px above, 8 px in) and `.a-note`.
+                    if AppState.share-footnote != "": VerticalLayout {
+                        padding-top: 6px;
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        Para {
+                            text: AppState.share-footnote;
+                            color: Theme.text-muted;
+                            font-size: 12px;
+                        }
+                    }
+                    if AppState.share-note != "": VerticalLayout {
+                        padding-top: 8px;
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        Para {
+                            text: AppState.share-note;
+                            color: Theme.text-muted;
+                            font-size: 12px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

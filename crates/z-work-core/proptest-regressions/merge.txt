@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 451ee0c8b4fa2438a36cc63732a7f875217335441c494b2f94254ef0a51a0283 # shrinks to a = Project { id: "p0", name: "name0", color: "#112230", archived: false, deleted: false, billable: false, budget_hours: None, client_zone: None, billing_type: Hourly, fixed_fee_cents: None, fee_currency: None, created_at: Ts(0), stamp: Stamp { at: Ts(0), by: "a" }, identity_stamp: None, billing_stamp: None, budget_stamp: None, archive_stamp: None }, b = Project { id: "p0", name: "name0", color: "#112230", archived: false, deleted: false, billable: false, budget_hours: None, client_zone: None, billing_type: Hourly, fixed_fee_cents: None, fee_currency: None, created_at: Ts(0), stamp: Stamp { at: Ts(0), by: "a" }, identity_stamp: Some(Stamp { at: Ts(1), by: "a" }), billing_stamp: None, budget_stamp: None, archive_stamp: None }

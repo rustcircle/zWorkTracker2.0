@@ -1,0 +1,27 @@
+(version 1)
+; Profile for every measurement launch of zWorkTracker 2.0 (Slint) and 1.x (Tauri):
+;   sandbox-exec -D REAL_HOME="$HOME" -D USER_CACHE="$(realpath $(getconf DARWIN_USER_CACHE_DIR))/" \
+;                -D USER_TEMP="$(realpath $(getconf DARWIN_USER_TEMP_DIR))/" -f scripts/measure/sandbox.sb <binary> ...
+; REAL_HOME is the user's real home, even when the harness gives the app a temporary HOME.
+; Everything is allowed except the owner's real zWorkTracker data, its WebKit/cache/state folders, and IP networking.
+; Unix-domain sockets stay allowed: 1.x's single-instance plugin uses one in /tmp.
+; Note: sandbox-exec confines the launched process and its children; WebKit's XPC helpers are started by launchd
+; and are not confined by it. measure.py redirects their folders with a temporary HOME and checks where they wrote.
+(allow default)
+(deny file-read* file-write*
+  (subpath (string-append (param "REAL_HOME") "/Library/Application Support/com.rustcircle.zworktracker"))
+  (subpath (string-append (param "REAL_HOME") "/Library/WebKit/com.rustcircle.zworktracker"))
+  (subpath (string-append (param "REAL_HOME") "/Library/WebKit/zWorkTracker"))
+  (subpath (string-append (param "REAL_HOME") "/Library/Caches/com.rustcircle.zworktracker"))
+  (subpath (string-append (param "REAL_HOME") "/Library/Caches/zWorkTracker"))
+  (subpath (string-append (param "REAL_HOME") "/Library/HTTPStorages/zWorkTracker"))
+  (subpath (string-append (param "REAL_HOME") "/Library/HTTPStorages/com.rustcircle.zworktracker"))
+  (subpath (string-append (param "REAL_HOME") "/Library/Saved Application State/com.rustcircle.zworktracker.savedState"))
+  (subpath (string-append (param "REAL_HOME") "/Library/LaunchAgents"))
+  (subpath (string-append (param "USER_CACHE") "com.rustcircle.zworktracker"))
+  (subpath (string-append (param "USER_CACHE") "zWorkTracker"))
+  (subpath (string-append (param "USER_TEMP") "com.rustcircle.zworktracker"))
+  (subpath (string-append (param "USER_TEMP") "zWorkTracker")))
+(deny network-outbound (remote ip))
+(deny network-bind (local ip))
+(deny network-inbound (local ip))

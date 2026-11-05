@@ -1,0 +1,26 @@
+[package]
+name = "zwt-bridge"
+description = "UI-independent adapter over z-work-core: data folder guard, sample store, worker thread, topics, view models"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+z-work-core.workspace = true
+zwt-ui-logic.workspace = true
+chrono.workspace = true
+chrono-tz.workspace = true
+serde_json.workspace = true
+iana-time-zone.workspace = true
+thiserror.workspace = true
+unicode-normalization.workspace = true
+unicase.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

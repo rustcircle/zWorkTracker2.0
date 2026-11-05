@@ -1,0 +1,19 @@
+zWorkTracker version saved 8 Oct 2026, 10:08 UTC
+Saved by Office PC (app 1.3.1). Reason: copy of the data before following a restore.
+Compared with the version from 08:05 UTC.
+
+Epoch 0. App schema 2. Data checksum 9be462a66c50eaaf.
+
+Now: 5 projects, 3 tasks, 8 time segments.
+Changed since then: 3 projects added, 2 tasks added, 6 time segments added (6 h 40 min), 7 settings added, 1 shift added, 2 prices added, 1 rounding rule added, 1 period of time away added, 1 billable pause added, 1 tag added, 1 template added, 1 billing summary added, 1 reference prefix added, 1 pause request added.
+
+What was done, from the audit trail:
+6 Oct 08:43  Studio Mac  found time away on "Homepage layout and hero"
+6 Oct 08:45  Studio Mac  answered about time away on "Homepage layout and hero"
+6 Oct 11:55  Studio Mac  marked a billable pause on "Homepage layout and hero". Reason: Client call about fonts
+6 Oct 13:35  Studio Mac  deleted the task "Logo variations" with all its time
+6 Oct 16:00  Studio Mac  added a time segment by hand on "Homepage layout and hero" (5 Oct 14:00-15:30). Reason: Worked offline on Monday
+6 Oct 16:00  Studio Mac  corrected a time segment on "Homepage layout and hero": 08:30-10:00 became 08:35-10:00. Reason: Started a few minutes late
+6 Oct 16:00  Studio Mac  voided a time segment on "Monthly maintenance" (13:45-15:15). Reason: Logged on the wrong project
+7 Oct 16:00  Studio Mac  created the billing summary A-001
+09:52  Office PC  asked for a pause on "Homepage layout and hero"
