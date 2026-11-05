@@ -66,7 +66,8 @@ a:hover { color: var(--accent-hover); }
 section[id] { scroll-margin-top: 80px; }
 
 .wrap { width: min(100%, 1200px); margin-inline: auto; padding-inline: 24px; }
-.liquid { display: none; position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
+/* 100lvh: the large viewport, so the box keeps its size while a phone's browser toolbar slides in and out. */
+.liquid { display: none; position: fixed; top: 0; left: 0; z-index: -1; width: 100%; height: 100vh; height: 100lvh; pointer-events: none; }
 .liquid.on { display: block; }
 .skip { position: absolute; left: 16px; top: -64px; z-index: 10; background: var(--surface-solid); padding: 8px 16px; border-radius: 8px; }
 .skip:focus { top: 8px; }
