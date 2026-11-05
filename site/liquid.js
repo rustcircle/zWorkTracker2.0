@@ -21,12 +21,19 @@
   };
   const readTheme = () => { stops = [hex('--bg'), hex('--liquid')]; };
   
+  // Size from the canvas box, which CSS pins to the large viewport (100lvh), not from innerHeight:
+  // iOS Safari fires resize every time its toolbar slides in or out while scrolling, and
+  // re-allocating the canvas there clears it to black until the next frame. So only a real
+  // change of the drawn size re-allocates, and the new canvas is painted at once.
   function resize() {
     const scale = lowPower ? 10 : 8;
-    w = Math.max(32, Math.round(innerWidth / scale));
-    h = Math.max(32, Math.round(innerHeight / scale));
+    const nw = Math.max(32, Math.round(canvas.clientWidth / scale));
+    const nh = Math.max(32, Math.round(canvas.clientHeight / scale));
+    if (nw === w && nh === h) return false;
+    w = nw; h = nh;
     canvas.width = w; canvas.height = h;
     image = ctx.createImageData(w, h);
+    return true;
   }
 
   function draw(now) {
@@ -77,10 +84,10 @@
   }
   const paintStill = () => { if (!running) draw(STILL_TIME); };
 
-  readTheme(); resize(); draw(STILL_TIME);
   canvas.classList.add('on');
+  readTheme(); resize(); draw(STILL_TIME);
 
-  addEventListener('resize', () => { resize(); paintStill(); }, { passive: true });
+  addEventListener('resize', () => { if (resize()) draw(running ? performance.now() : STILL_TIME); }, { passive: true });
   dark.addEventListener('change', () => { readTheme(); paintStill(); });
   still.addEventListener('change', () => { update(); paintStill(); });
   document.addEventListener('visibilitychange', update);
